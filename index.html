@@ -12,158 +12,636 @@
   <style>
     :root{
       --green:#236b3a;
-      --bg:#f4f7f4;
+      --green-dark:#174b29;
       --panel:#fff;
-      --line:#d8e1da;
+      --line:#d5ddd7;
       --text:#18211a;
       --muted:#617066;
+      --shadow:0 3px 14px rgba(0,0,0,.18);
     }
+
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-    header{padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
-    header h1{margin:0;font-size:21px}
-    header p{margin:4px 0 0;color:var(--muted);font-size:13px}
-    .toolbar,.controls,.searchbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
-    .controls{font-size:13px}
-    .controls .group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-    .controls label{display:flex;align-items:center;gap:5px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;min-height:34px}
-    .searchbar{align-items:stretch}
-    .search-card{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fafcfa;min-width:0}
-    .search-card strong{font-size:13px;margin-right:2px}
-    .search-card input,.search-card select{height:38px;border:1px solid #cdd8cf;border-radius:7px;padding:6px 8px;background:#fff;color:var(--text);font-size:14px}
-    .search-card input.coord{width:128px}
-    #sicarCode{width:300px;max-width:52vw;text-transform:uppercase}
-    .search-status{font-size:12px;color:var(--muted);min-width:60px}
-    button{min-height:40px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);padding:7px 12px;font-weight:700;cursor:pointer}
-    button.active{background:var(--green);border-color:var(--green);color:#fff}
+
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--text);
+      background:#e7ebe8;
+    }
+
+    body{
+      display:flex;
+      flex-direction:column;
+    }
+
+    header{
+      min-height:54px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:7px 12px;
+      background:var(--panel);
+      border-bottom:1px solid var(--line);
+      z-index:30;
+    }
+
+    .brand{
+      min-width:210px;
+      flex:1 1 auto;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      line-height:1.15;
+    }
+
+    .brand p{
+      margin:3px 0 0;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .draw-tools{
+      display:flex;
+      flex-wrap:wrap;
+      gap:5px;
+      justify-content:flex-end;
+    }
+
+    button,select,input{
+      font:inherit;
+    }
+
+    button{
+      min-height:34px;
+      border:1px solid var(--line);
+      border-radius:7px;
+      background:#fff;
+      color:var(--text);
+      padding:5px 9px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    button:hover{background:#f2f6f3}
+
+    button.active{
+      color:#fff;
+      background:var(--green);
+      border-color:var(--green);
+    }
+
     button.danger{color:#8a2929}
-    .notice{padding:6px 12px;background:#fffbe8;border-bottom:1px solid #eadfa9;color:#665a22;font-size:12px}
-    #map{width:100%;height:calc(100vh - 330px);min-height:420px;background:#e9eeea}
-    .status{display:flex;flex-wrap:wrap;gap:14px;padding:7px 12px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-    .status strong{color:var(--text)}
-    .measure-tooltip{position:relative;background:rgba(20,38,25,.86);color:#fff;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;pointer-events:none}
-    .error{display:none;padding:8px 12px;background:#fff2f2;border-bottom:1px solid #e3baba;color:#8a2929;font-size:12px}
-    .info-panel{display:none;position:absolute;z-index:20;right:12px;top:12px;width:min(350px,calc(100% - 24px));max-height:320px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
-    .info-panel h3{margin:0 0 8px;font-size:15px}
-    .info-panel .close{float:right;border:0;background:transparent;padding:0;min-height:0;width:auto;font-size:18px;line-height:1;cursor:pointer}
-    .info-panel table{width:100%;border-collapse:collapse;font-size:12px}
-    .info-panel td{padding:4px 3px;border-bottom:1px solid #eee;vertical-align:top;word-break:break-word}
-    .info-panel td:first-child{font-weight:700;width:40%}
-    input[type="range"]{width:105px}
+
+    .map-shell{
+      position:relative;
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    #map{
+      position:absolute;
+      inset:0;
+      background:#e8ece9;
+    }
+
+    .floating-panel{
+      position:absolute;
+      z-index:20;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(180,190,182,.9);
+      border-radius:9px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(3px);
+    }
+
+    .layers-panel{
+      top:10px;
+      left:10px;
+      width:225px;
+      overflow:hidden;
+    }
+
+    .panel-title{
+      width:100%;
+      min-height:36px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border:0;
+      border-radius:0;
+      padding:7px 10px;
+      background:#fff;
+      text-align:left;
+      font-size:12px;
+    }
+
+    .panel-title:hover{background:#f5f7f5}
+
+    .panel-title .arrow{
+      font-size:11px;
+      transition:transform .16s ease;
+    }
+
+    .layers-panel.collapsed .panel-title .arrow{
+      transform:rotate(-90deg);
+    }
+
+    .layers-panel.collapsed .layer-content{
+      display:none;
+    }
+
+    .layer-content{
+      padding:5px 9px 8px;
+      border-top:1px solid #edf0ed;
+    }
+
+    .layer-row{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      min-height:31px;
+      font-size:12px;
+      cursor:pointer;
+    }
+
+    .layer-row input{margin:0}
+
+    .layer-sub{
+      padding-left:22px;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .service-status{
+      margin-top:5px;
+      padding-top:5px;
+      border-top:1px solid #edf0ed;
+      color:var(--muted);
+      font-size:10px;
+      line-height:1.25;
+    }
+
+    .base-panel{
+      left:10px;
+      bottom:72px;
+      width:150px;
+      height:150px;
+      padding:9px;
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+
+    .base-panel strong{
+      font-size:11px;
+    }
+
+    .base-panel select{
+      width:100%;
+      min-height:34px;
+      border:1px solid var(--line);
+      border-radius:7px;
+      padding:4px 6px;
+      background:#fff;
+      font-size:11px;
+    }
+
+    .base-preview{
+      flex:1;
+      min-height:0;
+      border-radius:6px;
+      border:1px solid #d5dbd6;
+      background:
+        linear-gradient(135deg,rgba(0,0,0,.06),rgba(255,255,255,.1)),
+        #dde5df;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#536158;
+      font-size:10px;
+      line-height:1.25;
+      padding:5px;
+    }
+
+    .base-extra{
+      display:none;
+      gap:4px;
+      align-items:center;
+      font-size:9px;
+      color:var(--muted);
+    }
+
+    .base-extra.visible{display:flex}
+
+    .base-extra input[type="range"]{
+      width:65px;
+    }
+
+    .bottom-dock{
+      position:absolute;
+      z-index:22;
+      left:170px;
+      right:10px;
+      bottom:10px;
+      min-height:52px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 7px;
+      background:rgba(255,255,255,.97);
+      border:1px solid rgba(180,190,182,.9);
+      border-radius:9px;
+      box-shadow:var(--shadow);
+      font-size:10px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      white-space:nowrap;
+    }
+
+    .search-group{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      min-width:max-content;
+      padding-right:7px;
+      border-right:1px solid #e1e6e2;
+    }
+
+    .search-group:last-child{
+      border-right:0;
+      padding-right:0;
+    }
+
+    .search-group strong{
+      font-size:10px;
+    }
+
+    .bottom-dock select,
+    .bottom-dock input{
+      height:30px;
+      border:1px solid #cad4cc;
+      border-radius:6px;
+      padding:4px 6px;
+      background:#fff;
+      color:var(--text);
+      font-size:10px;
+    }
+
+    .bottom-dock button{
+      min-height:30px;
+      height:30px;
+      padding:3px 8px;
+      font-size:10px;
+    }
+
+    .coord-input{width:100px}
+    #queryValue{width:195px}
+
+    .dock-status{
+      min-width:48px;
+      max-width:125px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color:var(--muted);
+      font-size:9px;
+    }
+
+    .map-status{
+      position:absolute;
+      z-index:12;
+      right:10px;
+      bottom:70px;
+      padding:4px 7px;
+      border-radius:6px;
+      background:rgba(255,255,255,.88);
+      color:#526057;
+      font-size:9px;
+      box-shadow:0 1px 4px rgba(0,0,0,.12);
+      pointer-events:none;
+    }
+
+    .info-panel{
+      display:none;
+      position:absolute;
+      z-index:25;
+      right:10px;
+      top:10px;
+      width:min(350px,calc(100% - 255px));
+      max-height:340px;
+      overflow:auto;
+      background:rgba(255,255,255,.98);
+      border:1px solid var(--line);
+      border-radius:9px;
+      padding:11px;
+      box-shadow:var(--shadow);
+      font-size:11px;
+    }
+
+    .info-panel h3{
+      margin:0 24px 7px 0;
+      font-size:14px;
+    }
+
+    .info-panel .close{
+      position:absolute;
+      top:5px;
+      right:5px;
+      width:28px;
+      min-height:28px;
+      border:0;
+      background:transparent;
+      padding:0;
+      font-size:18px;
+    }
+
+    .info-panel table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:10px;
+    }
+
+    .info-panel td{
+      padding:4px 3px;
+      border-bottom:1px solid #edf0ed;
+      vertical-align:top;
+      word-break:break-word;
+    }
+
+    .info-panel td:first-child{
+      width:40%;
+      font-weight:700;
+    }
+
+    .measure-tooltip{
+      position:relative;
+      background:rgba(20,38,25,.86);
+      color:#fff;
+      padding:5px 8px;
+      border-radius:6px;
+      font-size:11px;
+      font-weight:bold;
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
+    .error{
+      display:none;
+      position:absolute;
+      z-index:50;
+      left:50%;
+      top:8px;
+      transform:translateX(-50%);
+      max-width:min(650px,calc(100% - 20px));
+      padding:7px 10px;
+      background:#fff2f2;
+      border:1px solid #e3baba;
+      border-radius:7px;
+      color:#8a2929;
+      font-size:11px;
+      box-shadow:var(--shadow);
+    }
+
     [hidden]{display:none!important}
-    @media(max-width:760px){
-      header{padding:11px 12px} header h1{font-size:18px}
-      .toolbar{display:grid;grid-template-columns:repeat(2,1fr)} .toolbar button{width:100%}
-      .controls{align-items:stretch}.controls .group{width:100%}.controls label{flex:1}
-      .search-card{width:100%}.search-card input.coord{flex:1;min-width:110px}.search-card select{width:100%}
-      #sicarCode{flex:1;width:auto;max-width:none;min-width:170px}
-      #map{height:55vh;min-height:390px}
+
+    @media(max-width:850px){
+      header{
+        min-height:auto;
+        align-items:flex-start;
+      }
+
+      .brand p{display:none}
+
+      .draw-tools{
+        flex:0 1 62%;
+      }
+
+      .draw-tools button{
+        min-height:32px;
+        font-size:10px;
+        padding:4px 7px;
+      }
+
+      .layers-panel{
+        width:190px;
+      }
+
+      .info-panel{
+        width:min(320px,calc(100% - 215px));
+      }
+
+      .bottom-dock{
+        left:10px;
+        bottom:8px;
+      }
+
+      .base-panel{
+        bottom:70px;
+        width:132px;
+        height:132px;
+      }
+
+      .map-status{
+        bottom:68px;
+      }
+    }
+
+    @media(max-width:560px){
+      header{
+        display:block;
+        padding:7px 8px;
+      }
+
+      .brand h1{
+        font-size:15px;
+        margin-bottom:5px;
+      }
+
+      .draw-tools{
+        justify-content:flex-start;
+        gap:3px;
+      }
+
+      .draw-tools button{
+        min-height:29px;
+        font-size:9px;
+      }
+
+      .layers-panel{
+        top:8px;
+        left:8px;
+        width:175px;
+      }
+
+      .base-panel{
+        left:8px;
+        bottom:90px;
+        width:122px;
+        height:122px;
+        padding:7px;
+      }
+
+      .bottom-dock{
+        left:8px;
+        right:8px;
+        bottom:8px;
+        min-height:70px;
+        align-items:flex-start;
+      }
+
+      .info-panel{
+        top:8px;
+        right:8px;
+        width:calc(100% - 199px);
+        min-width:150px;
+        max-height:270px;
+      }
+
+      .map-status{
+        right:8px;
+        bottom:86px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>WebMap de Treinamento</h1>
-    <p>OpenLayers · WMS · WFS · XYZ · processamento local</p>
+    <div class="brand">
+      <h1>WebMap de Treinamento</h1>
+      <p>OpenLayers · WMS · WFS · XYZ · processamento local</p>
+    </div>
+
+    <div class="draw-tools" aria-label="Ferramentas de desenho">
+      <button id="btnNavigate" class="active" type="button">Navegar</button>
+      <button id="btnPoint" type="button">Ponto</button>
+      <button id="btnLine" type="button">Linha</button>
+      <button id="btnPolygon" type="button">Polígono</button>
+      <button id="btnClear" class="danger" type="button">Limpar</button>
+    </div>
   </header>
 
-  <div id="error" class="error"></div>
-
-  <div class="toolbar">
-    <button id="btnNavigate" class="active" type="button">Navegar</button>
-    <button id="btnPoint" type="button">Ponto</button>
-    <button id="btnLine" type="button">Linha</button>
-    <button id="btnPolygon" type="button">Polígono</button>
-    <button id="btnClear" class="danger" type="button">Limpar desenhos</button>
-  </div>
-
-  <div class="searchbar">
-    <div class="search-card">
-      <strong>Buscar coordenadas</strong>
-      <select id="coordMode" aria-label="Sistema de coordenadas">
-        <option value="decimal">Grau decimal · SIRGAS 2000</option>
-        <option value="utm">UTM · SIRGAS 2000 / 24S</option>
-      </select>
-      <span id="decimalFields">
-        <input id="latInput" class="coord" inputmode="decimal" placeholder="Latitude -19.50" aria-label="Latitude">
-        <input id="lonInput" class="coord" inputmode="decimal" placeholder="Longitude -40.50" aria-label="Longitude">
-      </span>
-      <span id="utmFields" hidden>
-        <input id="eastInput" class="coord" inputmode="decimal" placeholder="E 350000" aria-label="Coordenada Este">
-        <input id="northInput" class="coord" inputmode="decimal" placeholder="N 7840000" aria-label="Coordenada Norte">
-      </span>
-      <button id="btnFindCoord" type="button">Localizar</button>
-      <span id="coordSearchStatus" class="search-status"></span>
-    </div>
-
-    <div class="search-card">
-      <strong>Localizar imóvel SICAR</strong>
-      <input id="sicarCode" autocomplete="off" placeholder="Código completo do imóvel" aria-label="Código SICAR">
-      <button id="btnFindSicar" type="button">Localizar</button>
-      <span id="sicarSearchStatus" class="search-status"></span>
-    </div>
-  </div>
-
-  <div class="controls">
-    <strong>Mapa-base:</strong>
-    <div class="group">
-      <label><input name="base" value="osm" type="radio" checked> OSM</label>
-      <label><input name="base" value="ortho" type="radio"> Ortofoto 2012/2015</label>
-      <label><input name="base" value="google" type="radio"> Google Satellite*</label>
-    </div>
-    <label>Opacidade ortofoto <input id="orthoOpacity" type="range" min="0" max="1" step="0.05" value="1"></label>
-  </div>
-
-  <div class="controls">
-    <strong>Sobreposições:</strong>
-    <label><input id="toggleMunicipios" type="checkbox" checked> Limites municipais</label>
-    <label><input id="toggleSicar" type="checkbox" checked> SICAR WFS</label>
-    <label><input id="toggleLabels" type="checkbox" checked> Rótulos SICAR</label>
-    <span id="serviceStatus">Serviços prontos.</span>
-  </div>
-
-  <div class="notice">* Google Satellite usa a URL XYZ informada para este treinamento. A busca UTM utiliza SIRGAS 2000 / UTM zona 24S (EPSG:31984).</div>
-
-  <div style="position:relative">
+  <main class="map-shell">
+    <div id="error" class="error"></div>
     <div id="map"></div>
-    <div id="infoPanel" class="info-panel"></div>
-  </div>
 
-  <div class="status">
-    <span>Ferramenta: <strong id="modeText">Navegar</strong></span>
-    <span>Coordenadas: <strong id="coordText">—</strong></span>
-    <span>Medição: <strong id="measureText">—</strong></span>
-    <span>SICAR carregados: <strong id="featureCount">0</strong></span>
-  </div>
+    <section id="layersPanel" class="floating-panel layers-panel" aria-label="Camadas vetoriais">
+      <button id="layersToggle" class="panel-title" type="button" aria-expanded="true">
+        <span><strong>Camadas vetoriais</strong></span>
+        <span class="arrow">▼</span>
+      </button>
+      <div class="layer-content">
+        <label class="layer-row">
+          <input id="toggleMunicipios" type="checkbox" checked>
+          <span>Limite municipal</span>
+        </label>
+        <label class="layer-row">
+          <input id="toggleSicar" type="checkbox" checked>
+          <span>Imóveis SICAR</span>
+        </label>
+        <label class="layer-row layer-sub">
+          <input id="toggleLabels" type="checkbox" checked>
+          <span>Rótulos SICAR</span>
+        </label>
+        <div id="serviceStatus" class="service-status">Serviços prontos.</div>
+      </div>
+    </section>
+
+    <section class="floating-panel base-panel" aria-label="Mapa base">
+      <strong>Mapa base</strong>
+      <select id="baseSelect" aria-label="Selecionar mapa base">
+        <option value="google" selected>Google Satellite</option>
+        <option value="ortho">Ortofoto 2012/2015</option>
+        <option value="osm">OpenStreetMap</option>
+      </select>
+      <div id="basePreview" class="base-preview">Google Satellite<br><small>XYZ experimental</small></div>
+      <div id="orthoExtra" class="base-extra">
+        <span>Opac.</span>
+        <input id="orthoOpacity" type="range" min="0" max="1" step="0.05" value="1">
+      </div>
+    </section>
+
+    <section class="bottom-dock" aria-label="Barra de buscas">
+      <div class="search-group">
+        <strong>Coordenadas</strong>
+        <select id="coordMode" aria-label="Sistema de coordenadas">
+          <option value="decimal">Grau decimal</option>
+          <option value="utm">UTM 24S</option>
+        </select>
+
+        <span id="decimalFields">
+          <input id="latInput" class="coord-input" inputmode="decimal" placeholder="Lat. -19,50" aria-label="Latitude">
+          <input id="lonInput" class="coord-input" inputmode="decimal" placeholder="Long. -40,50" aria-label="Longitude">
+        </span>
+
+        <span id="utmFields" hidden>
+          <input id="eastInput" class="coord-input" inputmode="decimal" placeholder="E 350000" aria-label="Coordenada Este">
+          <input id="northInput" class="coord-input" inputmode="decimal" placeholder="N 7840000" aria-label="Coordenada Norte">
+        </span>
+
+        <button id="btnFindCoord" type="button">Ir</button>
+        <span id="coordSearchStatus" class="dock-status"></span>
+      </div>
+
+      <div class="search-group">
+        <strong>Buscar atributo</strong>
+        <select id="queryLayer" aria-label="Camada">
+          <option value="sicar">Imóveis SICAR</option>
+          <option value="municipios">Limite municipal</option>
+        </select>
+        <select id="queryField" aria-label="Campo"></select>
+        <input id="queryValue" autocomplete="off" placeholder="Valor" aria-label="Valor para busca">
+        <button id="btnFindAttribute" type="button">Buscar</button>
+        <span id="queryStatus" class="dock-status"></span>
+      </div>
+    </section>
+
+    <div id="mapStatus" class="map-status">Lat — · Lon —</div>
+    <aside id="infoPanel" class="info-panel"></aside>
+  </main>
 
   <script>
     (function(){
       const errorBox=document.getElementById('error');
       const serviceStatus=document.getElementById('serviceStatus');
-      const featureCount=document.getElementById('featureCount');
       const infoPanel=document.getElementById('infoPanel');
       const toggleMunicipios=document.getElementById('toggleMunicipios');
       const toggleSicar=document.getElementById('toggleSicar');
       const toggleLabels=document.getElementById('toggleLabels');
+      const layersPanel=document.getElementById('layersPanel');
+      const layersToggle=document.getElementById('layersToggle');
+      const baseSelect=document.getElementById('baseSelect');
+      const basePreview=document.getElementById('basePreview');
+      const orthoExtra=document.getElementById('orthoExtra');
       const orthoOpacity=document.getElementById('orthoOpacity');
       const coordMode=document.getElementById('coordMode');
       const decimalFields=document.getElementById('decimalFields');
       const utmFields=document.getElementById('utmFields');
       const coordSearchStatus=document.getElementById('coordSearchStatus');
-      const sicarSearchStatus=document.getElementById('sicarSearchStatus');
       const latInput=document.getElementById('latInput');
       const lonInput=document.getElementById('lonInput');
       const eastInput=document.getElementById('eastInput');
       const northInput=document.getElementById('northInput');
-      const sicarCode=document.getElementById('sicarCode');
+      const queryLayer=document.getElementById('queryLayer');
+      const queryField=document.getElementById('queryField');
+      const queryValue=document.getElementById('queryValue');
+      const queryStatus=document.getElementById('queryStatus');
+      const mapStatus=document.getElementById('mapStatus');
 
       function showError(message){
         errorBox.style.display='block';
         errorBox.textContent=message;
+        window.setTimeout(function(){errorBox.style.display='none';},5000);
       }
 
       function parseNumber(value){
-        return Number(String(value).trim().replace(',', '.'));
+        return Number(String(value).trim().replace(',','.'));
       }
 
       function escapeHtml(value){
@@ -172,7 +650,11 @@
           .replaceAll('<','&lt;')
           .replaceAll('>','&gt;')
           .replaceAll('"','&quot;')
-          .replaceAll("'",'&#039;');
+          .replaceAll("'","&#039;");
+      }
+
+      function cqlQuote(value){
+        return String(value).replaceAll("'","''");
       }
 
       if(typeof ol==='undefined'){
@@ -190,7 +672,7 @@
       try{
         const osmLayer=new ol.layer.Tile({
           source:new ol.source.OSM(),
-          visible:true,
+          visible:false,
           zIndex:0
         });
 
@@ -198,7 +680,6 @@
           url:'https://ide.geobases.es.gov.br/geoserver/ows',
           params:{
             'LAYERS':'geonode:iema_ortofotomosaico_es_025m_2012-2015',
-            'STYLES':'default_raster',
             'FORMAT':'image/png',
             'TILED':true
           },
@@ -222,7 +703,7 @@
 
         const googleLayer=new ol.layer.Tile({
           source:googleSource,
-          visible:false,
+          visible:true,
           zIndex:0
         });
 
@@ -272,7 +753,10 @@
           if(toggleLabels.checked && map && map.getView().getZoom()>=14){
             label='Sicar: ...'+(cod ? cod.slice(-5) : '-----');
             if(Number.isFinite(area)){
-              label+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha';
+              label+='\n'+area.toLocaleString('pt-BR',{
+                minimumFractionDigits:2,
+                maximumFractionDigits:2
+              })+' ha';
             }
           }
 
@@ -308,13 +792,14 @@
               return new ol.style.Style({
                 image:new ol.style.Circle({
                   radius:9,
-                  fill:new ol.style.Fill({color:'rgba(255,255,255,0.95)'}),
+                  fill:new ol.style.Fill({color:'rgba(255,255,255,.95)'}),
                   stroke:new ol.style.Stroke({color:'#d52020',width:4})
                 })
               });
             }
+
             return new ol.style.Style({
-              fill:new ol.style.Fill({color:'rgba(255,235,59,0.18)'}),
+              fill:new ol.style.Fill({color:'rgba(255,235,59,.16)'}),
               stroke:new ol.style.Stroke({color:'#e00000',width:4})
             });
           }
@@ -325,7 +810,7 @@
           source:drawSource,
           zIndex:20,
           style:new ol.style.Style({
-            fill:new ol.style.Fill({color:'rgba(35,107,58,0.20)'}),
+            fill:new ol.style.Fill({color:'rgba(35,107,58,.20)'}),
             stroke:new ol.style.Stroke({color:'#236b3a',width:3}),
             image:new ol.style.Circle({
               radius:6,
@@ -337,7 +822,15 @@
 
         map=new ol.Map({
           target:'map',
-          layers:[osmLayer,orthoLayer,googleLayer,municipiosLayer,sicarLayer,searchLayer,drawLayer],
+          layers:[
+            osmLayer,
+            orthoLayer,
+            googleLayer,
+            municipiosLayer,
+            sicarLayer,
+            searchLayer,
+            drawLayer
+          ],
           view:new ol.View({
             center:ol.proj.fromLonLat([-40.5,-19.6]),
             zoom:8
@@ -347,9 +840,6 @@
         let drawInteraction=null;
         let measureOverlay=null;
 
-        const modeText=document.getElementById('modeText');
-        const coordText=document.getElementById('coordText');
-        const measureText=document.getElementById('measureText');
         const buttons={
           navigate:document.getElementById('btnNavigate'),
           point:document.getElementById('btnPoint'),
@@ -357,8 +847,32 @@
           polygon:document.getElementById('btnPolygon')
         };
 
+        const searchDefinitions={
+          sicar:{
+            label:'Imóveis SICAR',
+            url:'https://geoserver.car.gov.br/geoserver/sicar/wfs',
+            typeName:'sicar:sicar_imoveis_es',
+            fields:[
+              {name:'cod_imovel',label:'Código SICAR',type:'text',mode:'exact'},
+              {name:'municipio',label:'Município',type:'text',mode:'contains'},
+              {name:'status_imovel',label:'Status',type:'text',mode:'contains'},
+              {name:'area',label:'Área (ha)',type:'number',mode:'exact'}
+            ]
+          },
+          municipios:{
+            label:'Limite municipal',
+            url:'https://ide.geobases.es.gov.br/geoserver/ows',
+            typeName:'geonode:idaf_limite_municipal_2018_11',
+            fields:[
+              {name:'nome',label:'Nome',type:'text',mode:'contains'}
+            ]
+          }
+        };
+
         function setActiveButton(name){
-          Object.values(buttons).forEach(function(b){b.classList.remove('active');});
+          Object.values(buttons).forEach(function(button){
+            button.classList.remove('active');
+          });
           buttons[name].classList.add('active');
         }
 
@@ -371,23 +885,29 @@
 
         function formatLength(line){
           const length=ol.sphere.getLength(line);
-          return length>=1000 ? (length/1000).toFixed(2)+' km' : length.toFixed(2)+' m';
+          return length>=1000
+            ? (length/1000).toFixed(2)+' km'
+            : length.toFixed(2)+' m';
         }
 
         function formatArea(polygon){
           const area=ol.sphere.getArea(polygon);
-          return area>=10000 ? (area/10000).toFixed(4)+' ha' : area.toFixed(2)+' m²';
+          return area>=10000
+            ? (area/10000).toFixed(4)+' ha'
+            : area.toFixed(2)+' m²';
         }
 
         function createMeasureOverlay(){
           const element=document.createElement('div');
           element.className='measure-tooltip';
+
           measureOverlay=new ol.Overlay({
             element:element,
             offset:[0,-12],
             positioning:'bottom-center',
             stopEvent:false
           });
+
           map.addOverlay(measureOverlay);
           return element;
         }
@@ -395,19 +915,20 @@
         function activateNavigate(){
           removeDrawInteraction();
           setActiveButton('navigate');
-          modeText.textContent='Navegar';
         }
 
-        function activateDraw(type,buttonName,label){
+        function activateDraw(type,buttonName){
           removeDrawInteraction();
           setActiveButton(buttonName);
-          modeText.textContent=label;
 
-          drawInteraction=new ol.interaction.Draw({source:drawSource,type:type});
+          drawInteraction=new ol.interaction.Draw({
+            source:drawSource,
+            type:type
+          });
+
           map.addInteraction(drawInteraction);
 
           drawInteraction.on('drawstart',function(event){
-            measureText.textContent='Desenhando...';
             const feature=event.feature;
             const tooltipElement=createMeasureOverlay();
 
@@ -417,195 +938,319 @@
 
               if(geometry.getType()==='Polygon'){
                 value=formatArea(geometry);
-                if(measureOverlay) measureOverlay.setPosition(geometry.getInteriorPoint().getCoordinates());
+                if(measureOverlay){
+                  measureOverlay.setPosition(
+                    geometry.getInteriorPoint().getCoordinates()
+                  );
+                }
               }else if(geometry.getType()==='LineString'){
                 value=formatLength(geometry);
-                if(measureOverlay) measureOverlay.setPosition(geometry.getLastCoordinate());
+                if(measureOverlay){
+                  measureOverlay.setPosition(geometry.getLastCoordinate());
+                }
               }
 
               if(value){
                 tooltipElement.textContent=value;
-                measureText.textContent=value;
               }
             });
           });
 
-          drawInteraction.on('drawend',function(event){
-            const geometry=event.feature.getGeometry();
-            if(geometry.getType()==='Point'){
-              const lonLat=ol.proj.toLonLat(geometry.getCoordinates());
-              measureText.textContent='Lat '+lonLat[1].toFixed(6)+' · Lon '+lonLat[0].toFixed(6);
-            }
+          drawInteraction.on('drawend',function(){
             measureOverlay=null;
           });
         }
 
-        function showCoordinateInfo(lon4674,lat4674,east,north){
-          infoPanel.innerHTML=
+        function closeInfo(){
+          infoPanel.style.display='none';
+        }
+
+        function renderInfo(title,properties){
+          let html=
             '<button class="close" type="button" aria-label="Fechar">×</button>'+ 
-            '<h3>Coordenada localizada</h3>'+ 
-            '<table>'+ 
-            '<tr><td>SIRGAS 2000</td><td>Lat '+lat4674.toFixed(8)+'<br>Lon '+lon4674.toFixed(8)+'</td></tr>'+ 
-            '<tr><td>UTM 24S</td><td>E '+east.toFixed(3)+' m<br>N '+north.toFixed(3)+' m</td></tr>'+ 
-            '</table>';
-          infoPanel.style.display='block';
-          infoPanel.querySelector('.close').addEventListener('click',function(){infoPanel.style.display='none';});
-        }
+            '<h3>'+escapeHtml(title)+'</h3>'+ 
+            '<table>';
 
-        function locateCoordinate(){
-          coordSearchStatus.textContent='';
-          if(typeof proj4==='undefined'){
-            coordSearchStatus.textContent='Proj4 indisponível.';
-            return;
-          }
+          Object.entries(properties).forEach(function(entry){
+            const key=entry[0];
+            const value=entry[1];
 
-          let lon4674,lat4674,east,north;
-
-          if(coordMode.value==='decimal'){
-            lat4674=parseNumber(latInput.value);
-            lon4674=parseNumber(lonInput.value);
-            if(!Number.isFinite(lat4674)||!Number.isFinite(lon4674)||lat4674<-90||lat4674>90||lon4674<-180||lon4674>180){
-              coordSearchStatus.textContent='Coordenadas inválidas.';
+            if(key==='geometry' || value===undefined || value===null){
               return;
             }
-            const utm=proj4('EPSG:4674','EPSG:31984',[lon4674,lat4674]);
-            east=utm[0]; north=utm[1];
-          }else{
-            east=parseNumber(eastInput.value);
-            north=parseNumber(northInput.value);
-            if(!Number.isFinite(east)||!Number.isFinite(north)||east<100000||east>900000||north<0||north>10000000){
-              coordSearchStatus.textContent='UTM inválida.';
-              return;
-            }
-            const geographic=proj4('EPSG:31984','EPSG:4674',[east,north]);
-            lon4674=geographic[0]; lat4674=geographic[1];
-          }
 
-          const wgs84=proj4('EPSG:4674','EPSG:4326',[lon4674,lat4674]);
-          const mapCoord=ol.proj.fromLonLat(wgs84);
-
-          searchSource.clear();
-          const marker=new ol.Feature({
-            geometry:new ol.geom.Point(mapCoord),
-            searchType:'coordinate'
-          });
-          searchSource.addFeature(marker);
-          map.getView().animate({center:mapCoord,zoom:17,duration:550});
-          coordSearchStatus.textContent='Localizado.';
-          showCoordinateInfo(lon4674,lat4674,east,north);
-        }
-
-        function showSicarInfo(feature){
-          const props=feature.getProperties();
-          const preferred=['cod_imovel','status_imovel','dat_criacao','data_atualizacao','area','condicao','uf','municipio','cod_municipio_ibge','m_fiscal','tipo_imovel','area_m2_calculada'];
-          let html='<button class="close" type="button" aria-label="Fechar">×</button><h3>Imóvel SICAR</h3><table>';
-
-          preferred.forEach(function(key){
-            if(props[key]===undefined || key==='geometry') return;
-            let value=props[key];
-            if(key==='area_m2_calculada' && Number.isFinite(Number(value))){
-              value=Number(value).toLocaleString('pt-BR',{maximumFractionDigits:2})+' m²';
-            }
-            html+='<tr><td>'+escapeHtml(key)+'</td><td>'+escapeHtml(value)+'</td></tr>';
+            html+=
+              '<tr><td>'+escapeHtml(key)+'</td><td>'+ 
+              escapeHtml(value)+'</td></tr>';
           });
 
           html+='</table>';
           infoPanel.innerHTML=html;
           infoPanel.style.display='block';
-          infoPanel.querySelector('.close').addEventListener('click',function(){infoPanel.style.display='none';});
+          infoPanel.querySelector('.close').addEventListener('click',closeInfo);
         }
 
-        async function locateSicar(){
-          let code=String(sicarCode.value||'').trim().toUpperCase();
-          sicarSearchStatus.textContent='';
+        function showCoordinateInfo(lon4674,lat4674,east,north){
+          renderInfo('Coordenada localizada',{
+            'Latitude':lat4674.toFixed(8),
+            'Longitude':lon4674.toFixed(8),
+            'UTM Este':east.toFixed(3)+' m',
+            'UTM Norte':north.toFixed(3)+' m',
+            'SRC geográfico':'SIRGAS 2000 · EPSG:4674',
+            'SRC UTM':'SIRGAS 2000 / UTM 24S · EPSG:31984'
+          });
+        }
 
-          if(!code){
-            sicarSearchStatus.textContent='Informe o código.';
-            return;
-          }
-          if(!/^[A-Z0-9-]+$/.test(code)){
-            sicarSearchStatus.textContent='Código inválido.';
-            return;
-          }
+        function showFeatureInfo(feature,title){
+          const props=feature.getProperties();
+          const clean={};
 
-          const loaded=sicarSource.getFeatures().find(function(f){
-            return String(f.get('cod_imovel')||'').toUpperCase()===code;
+          Object.keys(props).forEach(function(key){
+            if(key!=='geometry'){
+              clean[key]=props[key];
+            }
           });
 
-          if(loaded){
-            searchSource.clear();
-            const clone=loaded.clone();
-            clone.set('searchType','sicar');
-            searchSource.addFeature(clone);
-            map.getView().fit(clone.getGeometry(),{padding:[70,70,70,70],maxZoom:17,duration:550});
-            showSicarInfo(loaded);
-            sicarSearchStatus.textContent='Localizado.';
+          renderInfo(title,clean);
+        }
+
+        function locateCoordinate(){
+          coordSearchStatus.textContent='';
+
+          if(typeof proj4==='undefined'){
+            coordSearchStatus.textContent='Proj4 indisponível';
             return;
           }
 
-          sicarSearchStatus.textContent='Consultando WFS...';
-          document.getElementById('btnFindSicar').disabled=true;
+          let lon4674;
+          let lat4674;
+          let east;
+          let north;
+
+          if(coordMode.value==='decimal'){
+            lat4674=parseNumber(latInput.value);
+            lon4674=parseNumber(lonInput.value);
+
+            if(
+              !Number.isFinite(lat4674) ||
+              !Number.isFinite(lon4674) ||
+              lat4674<-90 || lat4674>90 ||
+              lon4674<-180 || lon4674>180
+            ){
+              coordSearchStatus.textContent='Inválida';
+              return;
+            }
+
+            const utm=proj4(
+              'EPSG:4674',
+              'EPSG:31984',
+              [lon4674,lat4674]
+            );
+
+            east=utm[0];
+            north=utm[1];
+          }else{
+            east=parseNumber(eastInput.value);
+            north=parseNumber(northInput.value);
+
+            if(
+              !Number.isFinite(east) ||
+              !Number.isFinite(north) ||
+              east<100000 || east>900000 ||
+              north<0 || north>10000000
+            ){
+              coordSearchStatus.textContent='UTM inválida';
+              return;
+            }
+
+            const geographic=proj4(
+              'EPSG:31984',
+              'EPSG:4674',
+              [east,north]
+            );
+
+            lon4674=geographic[0];
+            lat4674=geographic[1];
+          }
+
+          const mapCoordinate=ol.proj.fromLonLat([lon4674,lat4674]);
+
+          searchSource.clear();
+
+          const marker=new ol.Feature({
+            geometry:new ol.geom.Point(mapCoordinate),
+            searchType:'coordinate'
+          });
+
+          searchSource.addFeature(marker);
+
+          map.getView().animate({
+            center:mapCoordinate,
+            zoom:17,
+            duration:450
+          });
+
+          coordSearchStatus.textContent='Localizado';
+          showCoordinateInfo(lon4674,lat4674,east,north);
+        }
+
+        function updateQueryFields(){
+          const definition=searchDefinitions[queryLayer.value];
+          queryField.innerHTML='';
+
+          definition.fields.forEach(function(field){
+            const option=document.createElement('option');
+            option.value=field.name;
+            option.textContent=field.label;
+            queryField.appendChild(option);
+          });
+
+          queryValue.value='';
+          queryStatus.textContent='';
+        }
+
+        function buildCql(fieldDefinition,value){
+          if(fieldDefinition.type==='number'){
+            const numeric=parseNumber(value);
+
+            if(!Number.isFinite(numeric)){
+              throw new Error('Valor numérico inválido.');
+            }
+
+            return fieldDefinition.name+'='+numeric;
+          }
+
+          const safe=cqlQuote(value);
+
+          if(fieldDefinition.mode==='exact'){
+            return fieldDefinition.name+"='"+safe+"'";
+          }
+
+          return fieldDefinition.name+" ILIKE '%"+safe+"%'";
+        }
+
+        async function searchByAttribute(){
+          const layerDefinition=searchDefinitions[queryLayer.value];
+          const fieldDefinition=layerDefinition.fields.find(function(field){
+            return field.name===queryField.value;
+          });
+          const value=String(queryValue.value||'').trim();
+
+          queryStatus.textContent='';
+
+          if(!value){
+            queryStatus.textContent='Informe o valor';
+            return;
+          }
+
+          let cql;
 
           try{
-            const safeCode=code.replaceAll("'","''");
+            cql=buildCql(fieldDefinition,value);
+          }catch(error){
+            queryStatus.textContent=error.message;
+            return;
+          }
+
+          queryStatus.textContent='Consultando...';
+          document.getElementById('btnFindAttribute').disabled=true;
+
+          try{
             const params=new URLSearchParams({
               service:'WFS',
               version:'2.0.0',
               request:'GetFeature',
-              typeNames:'sicar:sicar_imoveis_es',
+              typeNames:layerDefinition.typeName,
               outputFormat:'application/json',
               srsName:'EPSG:3857',
-              count:'2',
-              CQL_FILTER:"cod_imovel='"+safeCode+"'"
+              count:'50',
+              CQL_FILTER:cql
             });
-            const response=await fetch('https://geoserver.car.gov.br/geoserver/sicar/wfs?'+params.toString());
-            if(!response.ok) throw new Error('HTTP '+response.status);
+
+            const response=await fetch(
+              layerDefinition.url+'?'+params.toString()
+            );
+
+            if(!response.ok){
+              throw new Error('HTTP '+response.status);
+            }
+
             const json=await response.json();
-            const features=new ol.format.GeoJSON().readFeatures(json,{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});
+
+            const features=new ol.format.GeoJSON().readFeatures(
+              json,
+              {
+                dataProjection:'EPSG:3857',
+                featureProjection:'EPSG:3857'
+              }
+            );
 
             if(!features.length){
-              sicarSearchStatus.textContent='Imóvel não encontrado.';
+              queryStatus.textContent='Não encontrado';
               return;
             }
 
-            const feature=features[0];
-            const area=Number(feature.get('area'));
-            if(Number.isFinite(area)) feature.set('area_m2_calculada',area*10000,true);
-            feature.set('searchType','sicar');
-
             searchSource.clear();
-            searchSource.addFeature(feature);
-            map.getView().fit(feature.getGeometry(),{padding:[70,70,70,70],maxZoom:17,duration:650});
-            showSicarInfo(feature);
-            sicarSearchStatus.textContent='Localizado.';
-          }catch(err){
-            console.error(err);
-            sicarSearchStatus.textContent='Falha na consulta.';
+
+            features.forEach(function(feature){
+              feature.set('searchType','attribute');
+              searchSource.addFeature(feature);
+            });
+
+            const extent=searchSource.getExtent();
+
+            if(extent && !ol.extent.isEmpty(extent)){
+              map.getView().fit(extent,{
+                padding:[70,70,90,70],
+                maxZoom:17,
+                duration:550
+              });
+            }
+
+            queryStatus.textContent=
+              features.length===1
+                ? '1 resultado'
+                : features.length+' resultados';
+
+            showFeatureInfo(
+              features[0],
+              layerDefinition.label+
+              (features.length>1
+                ? ' · primeiro de '+features.length
+                : '')
+            );
+          }catch(error){
+            console.error(error);
+            queryStatus.textContent='Falha na consulta';
           }finally{
-            document.getElementById('btnFindSicar').disabled=false;
+            document.getElementById('btnFindAttribute').disabled=false;
           }
         }
 
-        coordMode.addEventListener('change',function(){
-          const isUtm=coordMode.value==='utm';
-          decimalFields.hidden=isUtm;
-          utmFields.hidden=!isUtm;
-          coordSearchStatus.textContent='';
+        layersToggle.addEventListener('click',function(){
+          const collapsed=layersPanel.classList.toggle('collapsed');
+          layersToggle.setAttribute(
+            'aria-expanded',
+            collapsed ? 'false' : 'true'
+          );
         });
 
-        document.getElementById('btnFindCoord').addEventListener('click',locateCoordinate);
-        document.getElementById('btnFindSicar').addEventListener('click',locateSicar);
-        [latInput,lonInput,eastInput,northInput].forEach(function(input){
-          input.addEventListener('keydown',function(event){if(event.key==='Enter') locateCoordinate();});
-        });
-        sicarCode.addEventListener('keydown',function(event){if(event.key==='Enter') locateSicar();});
+        baseSelect.addEventListener('change',function(){
+          const value=baseSelect.value;
 
-        document.querySelectorAll('input[name="base"]').forEach(function(radio){
-          radio.addEventListener('change',function(){
-            osmLayer.setVisible(radio.value==='osm');
-            orthoLayer.setVisible(radio.value==='ortho');
-            googleLayer.setVisible(radio.value==='google');
-          });
+          googleLayer.setVisible(value==='google');
+          orthoLayer.setVisible(value==='ortho');
+          osmLayer.setVisible(value==='osm');
+
+          orthoExtra.classList.toggle('visible',value==='ortho');
+
+          if(value==='google'){
+            basePreview.innerHTML='Google Satellite<br><small>XYZ experimental</small>';
+          }else if(value==='ortho'){
+            basePreview.innerHTML='Ortofoto 2012/2015<br><small>GEOBASES</small>';
+          }else{
+            basePreview.innerHTML='OpenStreetMap<br><small>mapa colaborativo</small>';
+          }
         });
 
         orthoOpacity.addEventListener('input',function(){
@@ -624,12 +1269,71 @@
           sicarLayer.changed();
         });
 
+        coordMode.addEventListener('change',function(){
+          const isUtm=coordMode.value==='utm';
+          decimalFields.hidden=isUtm;
+          utmFields.hidden=!isUtm;
+          coordSearchStatus.textContent='';
+        });
+
+        queryLayer.addEventListener('change',updateQueryFields);
+
+        document.getElementById('btnFindCoord').addEventListener(
+          'click',
+          locateCoordinate
+        );
+
+        document.getElementById('btnFindAttribute').addEventListener(
+          'click',
+          searchByAttribute
+        );
+
+        [latInput,lonInput,eastInput,northInput].forEach(function(input){
+          input.addEventListener('keydown',function(event){
+            if(event.key==='Enter'){
+              locateCoordinate();
+            }
+          });
+        });
+
+        queryValue.addEventListener('keydown',function(event){
+          if(event.key==='Enter'){
+            searchByAttribute();
+          }
+        });
+
+        buttons.navigate.addEventListener('click',activateNavigate);
+        buttons.point.addEventListener('click',function(){
+          activateDraw('Point','point');
+        });
+        buttons.line.addEventListener('click',function(){
+          activateDraw('LineString','line');
+        });
+        buttons.polygon.addEventListener('click',function(){
+          activateDraw('Polygon','polygon');
+        });
+
+        document.getElementById('btnClear').addEventListener('click',function(){
+          drawSource.clear();
+          searchSource.clear();
+
+          map.getOverlays().getArray().slice().forEach(function(overlay){
+            map.removeOverlay(overlay);
+          });
+
+          coordSearchStatus.textContent='';
+          queryStatus.textContent='';
+          closeInfo();
+        });
+
         orthoSource.on('tileloaderror',function(){
           serviceStatus.textContent='Falha em algum tile da ortofoto.';
         });
+
         municipiosSource.on('tileloaderror',function(){
           serviceStatus.textContent='Falha em algum tile do limite municipal.';
         });
+
         googleSource.on('tileloaderror',function(){
           serviceStatus.textContent='Falha em algum tile do Google Satellite.';
         });
@@ -637,14 +1341,20 @@
         sicarSource.on('featuresloadstart',function(){
           serviceStatus.textContent='Carregando SICAR...';
         });
+
         sicarSource.on('featuresloadend',function(event){
           (event.features||[]).forEach(function(feature){
             const area=Number(feature.get('area'));
-            if(Number.isFinite(area)) feature.set('area_m2_calculada',area*10000,true);
+
+            if(Number.isFinite(area)){
+              feature.set('area_m2_calculada',area*10000,true);
+            }
           });
-          featureCount.textContent=String(sicarSource.getFeatures().length);
-          serviceStatus.textContent='SICAR carregado na área visível.';
+
+          serviceStatus.textContent=
+            'SICAR: '+sicarSource.getFeatures().length+' feições carregadas.';
         });
+
         sicarSource.on('featuresloaderror',function(){
           serviceStatus.textContent='Falha no WFS do SICAR.';
         });
@@ -654,36 +1364,33 @@
         });
 
         map.on('singleclick',function(event){
-          const feature=map.forEachFeatureAtPixel(event.pixel,function(f,layer){
-            return layer===sicarLayer ? f : null;
-          });
-          if(feature) showSicarInfo(feature);
-        });
+          const feature=map.forEachFeatureAtPixel(
+            event.pixel,
+            function(candidate,layer){
+              return layer===sicarLayer ? candidate : null;
+            }
+          );
 
-        buttons.navigate.addEventListener('click',activateNavigate);
-        buttons.point.addEventListener('click',function(){activateDraw('Point','point','Desenhar ponto');});
-        buttons.line.addEventListener('click',function(){activateDraw('LineString','line','Desenhar linha');});
-        buttons.polygon.addEventListener('click',function(){activateDraw('Polygon','polygon','Desenhar polígono');});
-
-        document.getElementById('btnClear').addEventListener('click',function(){
-          drawSource.clear();
-          searchSource.clear();
-          map.getOverlays().getArray().slice().forEach(function(o){map.removeOverlay(o);});
-          measureText.textContent='—';
-          coordSearchStatus.textContent='';
-          sicarSearchStatus.textContent='';
-          infoPanel.style.display='none';
+          if(feature){
+            showFeatureInfo(feature,'Imóvel SICAR');
+          }
         });
 
         map.on('pointermove',function(event){
           const lonLat=ol.proj.toLonLat(event.coordinate);
-          coordText.textContent='Lat '+lonLat[1].toFixed(6)+' · Lon '+lonLat[0].toFixed(6);
+          mapStatus.textContent=
+            'Lat '+lonLat[1].toFixed(6)+
+            ' · Lon '+lonLat[0].toFixed(6);
         });
 
-        window.addEventListener('resize',function(){map.updateSize();});
-      }catch(err){
-        console.error(err);
-        showError('Erro ao iniciar o mapa: '+err.message);
+        window.addEventListener('resize',function(){
+          map.updateSize();
+        });
+
+        updateQueryFields();
+      }catch(error){
+        console.error(error);
+        showError('Erro ao iniciar o mapa: '+error.message);
       }
     })();
   </script>
