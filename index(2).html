@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebMap de Treinamento</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.9.0/ol.css">
+
+  <style>
+    :root {
+      --green: #236b3a;
+      --green-dark: #174b29;
+      --bg: #f4f7f4;
+      --panel: #ffffff;
+      --line: #d8e1da;
+      --text: #18211a;
+      --muted: #617066;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 16px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f0f5f1;
+    }
+
+    button.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+
+    button.danger {
+      color: #8a2929;
+    }
+
+    #map {
+      width: 100%;
+      height: calc(100vh - 167px);
+      min-height: 420px;
+    }
+
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 8px 14px;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status strong {
+      color: var(--text);
+    }
+
+    .measure-tooltip {
+      position: relative;
+      background: rgba(20, 38, 25, 0.86);
+      color: white;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 12px;
+      }
+
+      header h1 {
+        font-size: 19px;
+      }
+
+      #map {
+        height: 62vh;
+        min-height: 390px;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>WebMap de Treinamento</h1>
+    <p>OpenLayers + OpenStreetMap · processamento local no navegador</p>
+  </header>
+
+  <div class="toolbar">
+    <button id="btnNavigate" class="active" type="button">Navegar</button>
+    <button id="btnPoint" type="button">Ponto</button>
+    <button id="btnLine" type="button">Linha</button>
+    <button id="btnPolygon" type="button">Polígono</button>
+    <button id="btnClear" class="danger" type="button">Limpar desenhos</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="status">
+    <span>Ferramenta: <strong id="modeText">Navegar</strong></span>
+    <span>Coordenadas: <strong id="coordText">—</strong></span>
+    <span>Última medição: <strong id="measureText">—</strong></span>
+  </div>
+
+  <script type="module">
+    import Map from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/Map.js';
+    import View from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/View.js';
+    import TileLayer from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/layer/Tile.js';
+    import VectorLayer from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/layer/Vector.js';
+    import OSM from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/source/OSM.js';
+    import VectorSource from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/source/Vector.js';
+    import Draw from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/interaction/Draw.js';
+    import Overlay from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/Overlay.js';
+    import Style from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/style/Style.js';
+    import Fill from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/style/Fill.js';
+    import Stroke from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/style/Stroke.js';
+    import CircleStyle from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/style/Circle.js';
+    import {fromLonLat, toLonLat} from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/proj.js';
+    import {getArea, getLength} from 'https://cdn.jsdelivr.net/npm/ol@10.9.0/sphere.js';
+
+    const vectorSource = new VectorSource();
+
+    const vectorStyle = new Style({
+      fill: new Fill({
+        color: 'rgba(35, 107, 58, 0.20)'
+      }),
+      stroke: new Stroke({
+        color: '#236b3a',
+        width: 3
+      }),
+      image: new CircleStyle({
+        radius: 6,
+        fill: new Fill({color: '#236b3a'}),
+        stroke: new Stroke({
+          color: '#ffffff',
+          width: 2
+        })
+      })
+    });
+
+    const vectorLayer = new VectorLayer({
+      source: vectorSource,
+      style: vectorStyle
+    });
+
+    const map = new Map({
+      target: 'map',
+      layers: [
+        new TileLayer({
+          source: new OSM()
+        }),
+        vectorLayer
+      ],
+      view: new View({
+        // Centro aproximado do Espírito Santo
+        center: fromLonLat([-40.5, -19.6]),
+        zoom: 8
+      })
+    });
+
+    let drawInteraction = null;
+    let measureOverlay = null;
+
+    const modeText = document.getElementById('modeText');
+    const coordText = document.getElementById('coordText');
+    const measureText = document.getElementById('measureText');
+
+    const buttons = {
+      navigate: document.getElementById('btnNavigate'),
+      point: document.getElementById('btnPoint'),
+      line: document.getElementById('btnLine'),
+      polygon: document.getElementById('btnPolygon')
+    };
+
+    function setActiveButton(name) {
+      Object.values(buttons).forEach(button => button.classList.remove('active'));
+      buttons[name].classList.add('active');
+    }
+
+    function removeDrawInteraction() {
+      if (drawInteraction) {
+        map.removeInteraction(drawInteraction);
+        drawInteraction = null;
+      }
+    }
+
+    function formatLength(line) {
+      const length = getLength(line);
+
+      if (length >= 1000) {
+        return `${(length / 1000).toFixed(2)} km`;
+      }
+
+      return `${length.toFixed(2)} m`;
+    }
+
+    function formatArea(polygon) {
+      const area = getArea(polygon);
+
+      if (area >= 10000) {
+        return `${(area / 10000).toFixed(4)} ha`;
+      }
+
+      return `${area.toFixed(2)} m²`;
+    }
+
+    function createMeasureOverlay() {
+      const element = document.createElement('div');
+      element.className = 'measure-tooltip';
+
+      measureOverlay = new Overlay({
+        element,
+        offset: [0, -12],
+        positioning: 'bottom-center',
+        stopEvent: false
+      });
+
+      map.addOverlay(measureOverlay);
+
+      return element;
+    }
+
+    function activateNavigate() {
+      removeDrawInteraction();
+      setActiveButton('navigate');
+      modeText.textContent = 'Navegar';
+    }
+
+    function activateDraw(type, buttonName, label) {
+      removeDrawInteraction();
+      setActiveButton(buttonName);
+      modeText.textContent = label;
+
+      drawInteraction = new Draw({
+        source: vectorSource,
+        type
+      });
+
+      map.addInteraction(drawInteraction);
+
+      drawInteraction.on('drawstart', event => {
+        measureText.textContent = 'Desenhando...';
+
+        const feature = event.feature;
+        const tooltipElement = createMeasureOverlay();
+
+        feature.getGeometry().on('change', geometryEvent => {
+          const geometry = geometryEvent.target;
+          let text = '';
+
+          if (geometry.getType() === 'Polygon') {
+            text = formatArea(geometry);
+            measureOverlay.setPosition(
+              geometry.getInteriorPoint().getCoordinates()
+            );
+          } else if (geometry.getType() === 'LineString') {
+            text = formatLength(geometry);
+            measureOverlay.setPosition(
+              geometry.getLastCoordinate()
+            );
+          }
+
+          if (text) {
+            tooltipElement.textContent = text;
+            measureText.textContent = text;
+          }
+        });
+      });
+
+      drawInteraction.on('drawend', event => {
+        const geometry = event.feature.getGeometry();
+
+        if (geometry.getType() === 'Point') {
+          const lonLat = toLonLat(geometry.getCoordinates());
+          measureText.textContent =
+            `${lonLat[1].toFixed(6)}, ${lonLat[0].toFixed(6)}`;
+        }
+
+        measureOverlay = null;
+      });
+    }
+
+    buttons.navigate.addEventListener('click', activateNavigate);
+
+    buttons.point.addEventListener('click', () => {
+      activateDraw('Point', 'point', 'Desenhar ponto');
+    });
+
+    buttons.line.addEventListener('click', () => {
+      activateDraw('LineString', 'line', 'Desenhar linha');
+    });
+
+    buttons.polygon.addEventListener('click', () => {
+      activateDraw('Polygon', 'polygon', 'Desenhar polígono');
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      vectorSource.clear();
+
+      map.getOverlays().getArray().slice().forEach(overlay => {
+        map.removeOverlay(overlay);
+      });
+
+      measureText.textContent = '—';
+    });
+
+    map.on('pointermove', event => {
+      const lonLat = toLonLat(event.coordinate);
+
+      coordText.textContent =
+        `Lat ${lonLat[1].toFixed(6)} · Lon ${lonLat[0].toFixed(6)}`;
+    });
+  </script>
+</body>
+</html>
