@@ -9,30 +9,42 @@
   <script src="https://cdn.jsdelivr.net/npm/ol@10.9.0/dist/ol.js"></script>
 
   <style>
-    :root{--green:#236b3a;--bg:#f4f7f4;--panel:#fff;--line:#d8e1da;--text:#18211a;--muted:#617066}
+    :root{
+      --green:#236b3a;
+      --bg:#f4f7f4;
+      --panel:#fff;
+      --line:#d8e1da;
+      --text:#18211a;
+      --muted:#617066;
+    }
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-    header{padding:16px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
-    header h1{margin:0;font-size:22px} header p{margin:5px 0 0;color:var(--muted);font-size:14px}
-    .toolbar,.layerbar,.basebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);font-size:13px}
-    .layerbar label,.basebar label{display:flex;align-items:center;gap:6px;min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:#fff}
-    .opacity-wrap{display:flex;align-items:center;gap:6px;padding:0 8px}.opacity-wrap input{width:120px}
-    button{min-height:42px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);padding:8px 13px;font-weight:700;cursor:pointer}
-    button.active{background:var(--green);border-color:var(--green);color:#fff} button.danger{color:#8a2929}
-    #map{width:100%;height:calc(100vh - 300px);min-height:420px;background:#e8ece9}
-    .status{display:flex;flex-wrap:wrap;gap:14px;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:13px}.status strong{color:var(--text)}
+    header{padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+    header h1{margin:0;font-size:21px}
+    header p{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .toolbar,.layerbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .layerbar{font-size:13px}
+    .layerbar label,.layerbar .control{display:flex;align-items:center;gap:6px;min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+    .layerbar input[type="range"]{width:100px}
+    button{min-height:40px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);padding:7px 12px;font-weight:700;cursor:pointer}
+    button.active{background:var(--green);border-color:var(--green);color:#fff}
+    button.danger{color:#8a2929}
+    #map{width:100%;height:calc(100vh - 270px);min-height:420px;background:#e8ece9}
+    .status{display:flex;flex-wrap:wrap;gap:14px;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    .status strong{color:var(--text)}
     .measure-tooltip{position:relative;background:rgba(20,38,25,.86);color:#fff;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;pointer-events:none}
-    .error{display:none;padding:10px 14px;background:#fff2f2;border-bottom:1px solid #e3baba;color:#8a2929;font-size:13px}
+    .error{display:none;padding:9px 14px;background:#fff2f2;border-bottom:1px solid #e3baba;color:#8a2929;font-size:13px}
     .notice{padding:7px 14px;background:#fffbe8;border-bottom:1px solid #eadfa9;color:#665a22;font-size:12px}
-    .info-panel{display:none;position:absolute;z-index:20;right:12px;top:12px;width:min(330px,calc(100% - 24px));max-height:300px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
-    .info-panel h3{margin:0 0 8px;font-size:15px}.info-panel table{width:100%;border-collapse:collapse;font-size:12px}.info-panel td{padding:4px 3px;border-bottom:1px solid #eee;vertical-align:top;word-break:break-word}.info-panel td:first-child{font-weight:700;width:38%}
-    @media(max-width:640px){header{padding:12px}header h1{font-size:19px}#map{height:55vh;min-height:390px}.toolbar{display:grid;grid-template-columns:repeat(2,1fr)}button{width:100%}.layerbar,.basebar{align-items:stretch}.layerbar label,.basebar label{flex:1}.opacity-wrap{width:100%;padding:4px 0}.opacity-wrap input{flex:1}}
+    .info-panel{display:none;position:absolute;z-index:20;right:12px;top:12px;width:min(350px,calc(100% - 24px));max-height:340px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
+    .info-panel h3{margin:0 0 8px;font-size:15px}.info-panel table{width:100%;border-collapse:collapse;font-size:12px}.info-panel td{padding:4px 3px;border-bottom:1px solid #eee;vertical-align:top;word-break:break-word}.info-panel td:first-child{font-weight:700;width:40%}
+    .small-status{color:var(--muted)}
+    @media(max-width:700px){header{padding:11px 12px}header h1{font-size:18px}#map{height:55vh;min-height:380px}.toolbar{display:grid;grid-template-columns:repeat(2,1fr)}button{width:100%}.layerbar{align-items:stretch}.layerbar label,.layerbar .control{flex:1 1 46%}.info-panel{top:8px}}
   </style>
 </head>
 <body>
   <header>
     <h1>WebMap de Treinamento</h1>
-    <p>OpenLayers · WMS GEOBASES · WFS SICAR · processamento no navegador</p>
+    <p>OpenLayers · OSM · WMS GEOBASES · WFS GEOBASES/SICAR · processamento local</p>
   </header>
 
   <div id="error" class="error"></div>
@@ -45,22 +57,23 @@
     <button id="btnClear" class="danger" type="button">Limpar desenhos</button>
   </div>
 
-  <div class="basebar">
+  <div class="layerbar">
     <strong>Mapa-base:</strong>
     <label><input name="basemap" id="baseOsm" type="radio" checked> OpenStreetMap</label>
     <label><input name="basemap" id="baseOrtho" type="radio"> Ortofoto 2012/2015</label>
-    <div class="opacity-wrap"><span>Opacidade:</span><input id="orthoOpacity" type="range" min="0" max="100" value="100"><span id="opacityValue">100%</span></div>
-    <span id="orthoStatus"></span>
+    <div class="control">Opacidade ortofoto <input id="orthoOpacity" type="range" min="0" max="1" value="1" step="0.05"></div>
   </div>
 
   <div class="layerbar">
-    <strong>Camadas:</strong>
+    <strong>Vetores:</strong>
+    <label><input id="toggleMunicipios" type="checkbox" checked> Limite municipal</label>
+    <label><input id="toggleMunicipiosLabels" type="checkbox" checked> Nomes municípios</label>
     <label><input id="toggleSicar" type="checkbox" checked> SICAR WFS</label>
-    <label><input id="toggleLabels" type="checkbox" checked> Rótulos SICAR</label>
-    <span id="wfsStatus">Aproxime para zoom 12+.</span>
+    <label><input id="toggleSicarLabels" type="checkbox" checked> Rótulos SICAR</label>
+    <span class="small-status" id="vectorStatus">Carregando limites municipais...</span>
   </div>
 
-  <div class="notice">A ortofoto é servida por WMS do GEOBASES. O SICAR é consultado por BBOX e os rótulos aparecem a partir do zoom 14.</div>
+  <div class="notice">Limites municipais: WFS GEOBASES. SICAR: WFS por BBOX a partir do zoom 12; rótulos SICAR a partir do zoom 14. Clique em uma feição para consultar atributos.</div>
 
   <div style="position:relative">
     <div id="map"></div>
@@ -71,183 +84,370 @@
     <span>Ferramenta: <strong id="modeText">Navegar</strong></span>
     <span>Coordenadas: <strong id="coordText">—</strong></span>
     <span>Última medição: <strong id="measureText">—</strong></span>
-    <span>SICAR carregados: <strong id="featureCount">0</strong></span>
+    <span>Municípios: <strong id="municipioCount">0</strong></span>
+    <span>SICAR carregados: <strong id="sicarCount">0</strong></span>
   </div>
 
-<script>
-(function(){
-  const errorBox=document.getElementById('error');
-  const wfsStatus=document.getElementById('wfsStatus');
-  const orthoStatus=document.getElementById('orthoStatus');
-  const featureCount=document.getElementById('featureCount');
-  const infoPanel=document.getElementById('infoPanel');
-  const toggleSicar=document.getElementById('toggleSicar');
-  const toggleLabels=document.getElementById('toggleLabels');
+  <script>
+    (function(){
+      const errorBox=document.getElementById('error');
+      const vectorStatus=document.getElementById('vectorStatus');
+      const municipioCount=document.getElementById('municipioCount');
+      const sicarCount=document.getElementById('sicarCount');
+      const infoPanel=document.getElementById('infoPanel');
 
-  function showError(message){errorBox.style.display='block';errorBox.textContent=message;}
-  if(typeof ol==='undefined'){showError('Erro ao carregar o OpenLayers.');return;}
+      const toggleMunicipios=document.getElementById('toggleMunicipios');
+      const toggleMunicipiosLabels=document.getElementById('toggleMunicipiosLabels');
+      const toggleSicar=document.getElementById('toggleSicar');
+      const toggleSicarLabels=document.getElementById('toggleSicarLabels');
 
-  try{
-    const osmLayer=new ol.layer.Tile({
-      source:new ol.source.OSM(),
-      visible:true,
-      zIndex:0
-    });
-
-    const orthoSource=new ol.source.TileWMS({
-      url:'https://ide.geobases.es.gov.br/geoserver/ows',
-      params:{
-        'LAYERS':'geonode:iema_ortofotomosaico_es_025m_2012-2015',
-        'STYLES':'geonode:raster',
-        'FORMAT':'image/png',
-        'TRANSPARENT':false,
-        'TILED':true
-      },
-      serverType:'geoserver',
-      transition:0
-    });
-
-    const orthoLayer=new ol.layer.Tile({
-      source:orthoSource,
-      visible:false,
-      opacity:1,
-      zIndex:1
-    });
-
-    orthoSource.on('tileloadstart',()=>{orthoStatus.textContent='Carregando ortofoto...';});
-    orthoSource.on('tileloadend',()=>{orthoStatus.textContent='Ortofoto carregada.';});
-    orthoSource.on('tileloaderror',()=>{orthoStatus.textContent='Falha em um tile da ortofoto.';});
-
-    const drawSource=new ol.source.Vector();
-    const drawLayer=new ol.layer.Vector({
-      source:drawSource,
-      zIndex:20,
-      style:new ol.style.Style({
-        fill:new ol.style.Fill({color:'rgba(35,107,58,0.20)'}),
-        stroke:new ol.style.Stroke({color:'#236b3a',width:3}),
-        image:new ol.style.Circle({radius:6,fill:new ol.style.Fill({color:'#236b3a'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})
-      })
-    });
-
-    const sicarSource=new ol.source.Vector({
-      format:new ol.format.GeoJSON(),
-      url:function(extent){
-        const params=new URLSearchParams({
-          service:'WFS',version:'2.0.0',request:'GetFeature',
-          typeNames:'sicar:sicar_imoveis_es',outputFormat:'application/json',
-          srsName:'EPSG:3857',count:'10000',bbox:extent.join(',')+',EPSG:3857'
-        });
-        return 'https://geoserver.car.gov.br/geoserver/sicar/wfs?'+params.toString();
-      },
-      strategy:ol.loadingstrategy.bbox
-    });
-
-    let map=null;
-
-    function sicarStyle(feature){
-      const cod=String(feature.get('cod_imovel')||'');
-      const area=Number(feature.get('area'));
-      let label='';
-      if(toggleLabels.checked && map && map.getView().getZoom()>=14){
-        label='Sicar: ...'+(cod?cod.slice(-5):'-----');
-        if(Number.isFinite(area)) label+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha';
+      function showError(message){
+        errorBox.style.display='block';
+        errorBox.textContent=message;
       }
-      return new ol.style.Style({
-        fill:new ol.style.Fill({color:'rgba(251,154,153,0.30)'}),
-        stroke:new ol.style.Stroke({color:'rgba(255,127,0,0.95)',width:1}),
-        text:label?new ol.style.Text({text:label,font:'10px Arial',fill:new ol.style.Fill({color:'#000'}),stroke:new ol.style.Stroke({color:'#fff',width:3}),overflow:false}):undefined
-      });
-    }
 
-    const sicarLayer=new ol.layer.Vector({
-      source:sicarSource,style:sicarStyle,minZoom:12,zIndex:10,
-      renderOrder:(a,b)=>Number(b.get('area')||0)-Number(a.get('area')||0)
-    });
+      if(typeof ol==='undefined'){
+        showError('Erro ao carregar o OpenLayers. Verifique sua conexão com a internet.');
+        return;
+      }
 
-    map=new ol.Map({
-      target:'map',
-      layers:[osmLayer,orthoLayer,sicarLayer,drawLayer],
-      view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})
-    });
-
-    let drawInteraction=null;
-    let measureOverlay=null;
-    const modeText=document.getElementById('modeText');
-    const coordText=document.getElementById('coordText');
-    const measureText=document.getElementById('measureText');
-    const buttons={navigate:document.getElementById('btnNavigate'),point:document.getElementById('btnPoint'),line:document.getElementById('btnLine'),polygon:document.getElementById('btnPolygon')};
-
-    function setActiveButton(name){Object.values(buttons).forEach(b=>b.classList.remove('active'));buttons[name].classList.add('active');}
-    function removeDrawInteraction(){if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null;}}
-    function formatLength(line){const length=ol.sphere.getLength(line);return length>=1000?(length/1000).toFixed(2)+' km':length.toFixed(2)+' m';}
-    function formatArea(poly){const area=ol.sphere.getArea(poly);return area>=10000?(area/10000).toFixed(4)+' ha':area.toFixed(2)+' m²';}
-    function createMeasureOverlay(){const el=document.createElement('div');el.className='measure-tooltip';measureOverlay=new ol.Overlay({element:el,offset:[0,-12],positioning:'bottom-center',stopEvent:false});map.addOverlay(measureOverlay);return el;}
-    function activateNavigate(){removeDrawInteraction();setActiveButton('navigate');modeText.textContent='Navegar';}
-
-    function activateDraw(type,buttonName,label){
-      removeDrawInteraction();setActiveButton(buttonName);modeText.textContent=label;
-      drawInteraction=new ol.interaction.Draw({source:drawSource,type:type});map.addInteraction(drawInteraction);
-      drawInteraction.on('drawstart',function(event){
-        measureText.textContent='Desenhando...';const feature=event.feature;const tooltip=createMeasureOverlay();
-        feature.getGeometry().on('change',function(ev){
-          const g=ev.target;let value='';
-          if(g.getType()==='Polygon'){value=formatArea(g);if(measureOverlay)measureOverlay.setPosition(g.getInteriorPoint().getCoordinates());}
-          else if(g.getType()==='LineString'){value=formatLength(g);if(measureOverlay)measureOverlay.setPosition(g.getLastCoordinate());}
-          if(value){tooltip.textContent=value;measureText.textContent=value;}
+      try{
+        const osmLayer=new ol.layer.Tile({
+          source:new ol.source.OSM(),
+          visible:true,
+          zIndex:0
         });
-      });
-      drawInteraction.on('drawend',function(event){
-        const g=event.feature.getGeometry();
-        if(g.getType()==='Point'){const ll=ol.proj.toLonLat(g.getCoordinates());measureText.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);}
-        measureOverlay=null;
-      });
-    }
 
-    sicarSource.on('featuresloadstart',()=>{wfsStatus.textContent='Carregando SICAR...';});
-    sicarSource.on('featuresloadend',function(event){
-      (event.features||[]).forEach(function(feature){const area=Number(feature.get('area'));if(Number.isFinite(area))feature.set('area_m2_calculada',area*10000,true);});
-      featureCount.textContent=String(sicarSource.getFeatures().length);wfsStatus.textContent='WFS carregado na área visível.';
-    });
-    sicarSource.on('featuresloaderror',()=>{wfsStatus.textContent='Falha no WFS.';});
+        const orthoLayer=new ol.layer.Tile({
+          source:new ol.source.TileWMS({
+            url:'https://ide.geobases.es.gov.br/geoserver/ows',
+            params:{
+              LAYERS:'geonode:iema_ortofotomosaico_es_025m_2012-2015',
+              STYLES:'geonode:raster',
+              FORMAT:'image/png',
+              TILED:true
+            },
+            serverType:'geoserver',
+            crossOrigin:'anonymous',
+            transition:0
+          }),
+          visible:false,
+          opacity:1,
+          zIndex:1
+        });
 
-    document.getElementById('baseOsm').addEventListener('change',function(){if(this.checked){osmLayer.setVisible(true);orthoLayer.setVisible(false);orthoStatus.textContent='';}});
-    document.getElementById('baseOrtho').addEventListener('change',function(){if(this.checked){osmLayer.setVisible(false);orthoLayer.setVisible(true);orthoSource.refresh();}});
-    document.getElementById('orthoOpacity').addEventListener('input',function(){const value=Number(this.value)/100;orthoLayer.setOpacity(value);document.getElementById('opacityValue').textContent=this.value+'%';});
+        const municipioSource=new ol.source.Vector({
+          format:new ol.format.GeoJSON(),
+          url:function(extent){
+            const params=new URLSearchParams({
+              service:'WFS',
+              version:'2.0.0',
+              request:'GetFeature',
+              typeNames:'geonode:idaf_limite_municipal_2018_11',
+              outputFormat:'application/json',
+              srsName:'EPSG:3857',
+              count:'1000',
+              bbox:extent.join(',')+',EPSG:3857'
+            });
+            return 'https://ide.geobases.es.gov.br/geoserver/ows?'+params.toString();
+          },
+          strategy:ol.loadingstrategy.bbox
+        });
 
-    toggleSicar.addEventListener('change',function(){sicarLayer.setVisible(this.checked);if(this.checked)sicarSource.changed();});
-    toggleLabels.addEventListener('change',()=>sicarLayer.changed());
+        let map=null;
 
-    map.getView().on('change:resolution',function(){
-      const zoom=map.getView().getZoom();
-      if(zoom<12)wfsStatus.textContent='Aproxime para zoom 12+.';
-      else if(zoom<14)wfsStatus.textContent='WFS ativo; rótulos a partir do zoom 14.';
-      sicarLayer.changed();
-    });
+        function municipioStyle(feature){
+          let textStyle;
+          if(toggleMunicipiosLabels.checked){
+            const nome=String(feature.get('nome')||'');
+            if(nome){
+              textStyle=new ol.style.Text({
+                text:nome,
+                font:'italic 11px Arial',
+                fill:new ol.style.Fill({color:'#000'}),
+                stroke:new ol.style.Stroke({color:'#fff',width:3}),
+                overflow:true
+              });
+            }
+          }
 
-    map.on('singleclick',function(event){
-      const feature=map.forEachFeatureAtPixel(event.pixel,(f,layer)=>layer===sicarLayer?f:null);
-      if(!feature){infoPanel.style.display='none';return;}
-      const props=feature.getProperties();
-      const preferred=['cod_imovel','status_imovel','dat_criacao','data_atualizacao','area','condicao','uf','municipio','cod_municipio_ibge','m_fiscal','tipo_imovel','area_m2_calculada'];
-      let html='<h3>Imóvel SICAR</h3><table>';
-      preferred.forEach(function(key){
-        if(props[key]===undefined||key==='geometry')return;
-        let value=props[key];
-        if(key==='area_m2_calculada'&&Number.isFinite(Number(value)))value=Number(value).toLocaleString('pt-BR',{maximumFractionDigits:2})+' m²';
-        html+='<tr><td>'+key+'</td><td>'+String(value)+'</td></tr>';
-      });
-      infoPanel.innerHTML=html+'</table>';infoPanel.style.display='block';
-    });
+          return new ol.style.Style({
+            fill:new ol.style.Fill({color:'rgba(255,255,255,0)'}),
+            stroke:new ol.style.Stroke({color:'#111',width:1}),
+            text:textStyle
+          });
+        }
 
-    buttons.navigate.addEventListener('click',activateNavigate);
-    buttons.point.addEventListener('click',()=>activateDraw('Point','point','Desenhar ponto'));
-    buttons.line.addEventListener('click',()=>activateDraw('LineString','line','Desenhar linha'));
-    buttons.polygon.addEventListener('click',()=>activateDraw('Polygon','polygon','Desenhar polígono'));
-    document.getElementById('btnClear').addEventListener('click',function(){drawSource.clear();map.getOverlays().getArray().slice().forEach(o=>map.removeOverlay(o));measureText.textContent='—';});
-    map.on('pointermove',function(event){const ll=ol.proj.toLonLat(event.coordinate);coordText.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);});
-    window.addEventListener('resize',()=>map.updateSize());
-  }catch(err){console.error(err);showError('Erro ao iniciar o mapa: '+err.message);}
-})();
-</script>
+        const municipioLayer=new ol.layer.Vector({
+          source:municipioSource,
+          style:municipioStyle,
+          visible:true,
+          zIndex:5
+        });
+
+        const sicarSource=new ol.source.Vector({
+          format:new ol.format.GeoJSON(),
+          url:function(extent){
+            const params=new URLSearchParams({
+              service:'WFS',
+              version:'2.0.0',
+              request:'GetFeature',
+              typeNames:'sicar:sicar_imoveis_es',
+              outputFormat:'application/json',
+              srsName:'EPSG:3857',
+              count:'10000',
+              bbox:extent.join(',')+',EPSG:3857'
+            });
+            return 'https://geoserver.car.gov.br/geoserver/sicar/wfs?'+params.toString();
+          },
+          strategy:ol.loadingstrategy.bbox
+        });
+
+        function sicarStyle(feature){
+          const cod=String(feature.get('cod_imovel')||'');
+          const area=Number(feature.get('area'));
+          let textStyle;
+
+          if(toggleSicarLabels.checked && map && map.getView().getZoom()>=14){
+            let label='Sicar: ...'+(cod ? cod.slice(-5) : '-----');
+            if(Number.isFinite(area)){
+              label+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha';
+            }
+            textStyle=new ol.style.Text({
+              text:label,
+              font:'10px Arial',
+              fill:new ol.style.Fill({color:'#000'}),
+              stroke:new ol.style.Stroke({color:'#fff',width:3}),
+              overflow:false
+            });
+          }
+
+          return new ol.style.Style({
+            fill:new ol.style.Fill({color:'rgba(251,154,153,0.30)'}),
+            stroke:new ol.style.Stroke({color:'rgba(255,127,0,0.95)',width:1}),
+            text:textStyle
+          });
+        }
+
+        const sicarLayer=new ol.layer.Vector({
+          source:sicarSource,
+          style:sicarStyle,
+          visible:true,
+          minZoom:12,
+          zIndex:10,
+          renderOrder:function(a,b){
+            return Number(b.get('area')||0)-Number(a.get('area')||0);
+          }
+        });
+
+        const drawSource=new ol.source.Vector();
+        const drawLayer=new ol.layer.Vector({
+          source:drawSource,
+          zIndex:20,
+          style:new ol.style.Style({
+            fill:new ol.style.Fill({color:'rgba(35,107,58,0.20)'}),
+            stroke:new ol.style.Stroke({color:'#236b3a',width:3}),
+            image:new ol.style.Circle({
+              radius:6,
+              fill:new ol.style.Fill({color:'#236b3a'}),
+              stroke:new ol.style.Stroke({color:'#fff',width:2})
+            })
+          })
+        });
+
+        map=new ol.Map({
+          target:'map',
+          layers:[osmLayer,orthoLayer,municipioLayer,sicarLayer,drawLayer],
+          view:new ol.View({
+            center:ol.proj.fromLonLat([-40.5,-19.6]),
+            zoom:8
+          })
+        });
+
+        document.getElementById('baseOsm').addEventListener('change',function(){
+          if(this.checked){osmLayer.setVisible(true);orthoLayer.setVisible(false);}
+        });
+        document.getElementById('baseOrtho').addEventListener('change',function(){
+          if(this.checked){osmLayer.setVisible(false);orthoLayer.setVisible(true);}
+        });
+        document.getElementById('orthoOpacity').addEventListener('input',function(){
+          orthoLayer.setOpacity(Number(this.value));
+        });
+
+        toggleMunicipios.addEventListener('change',function(){
+          municipioLayer.setVisible(this.checked);
+          if(this.checked) municipioSource.changed();
+        });
+        toggleMunicipiosLabels.addEventListener('change',function(){municipioLayer.changed();});
+        toggleSicar.addEventListener('change',function(){
+          sicarLayer.setVisible(this.checked);
+          if(this.checked) sicarSource.changed();
+        });
+        toggleSicarLabels.addEventListener('change',function(){sicarLayer.changed();});
+
+        municipioSource.on('featuresloadstart',function(){vectorStatus.textContent='Carregando limites municipais...';});
+        municipioSource.on('featuresloadend',function(){
+          municipioCount.textContent=String(municipioSource.getFeatures().length);
+          vectorStatus.textContent='Limites municipais carregados.';
+        });
+        municipioSource.on('featuresloaderror',function(){
+          vectorStatus.textContent='Falha no WFS municipal.';
+          showError('Não foi possível carregar o WFS de limites municipais do GEOBASES.');
+        });
+
+        sicarSource.on('featuresloadstart',function(){
+          if(map.getView().getZoom()>=12) vectorStatus.textContent='Carregando SICAR...';
+        });
+        sicarSource.on('featuresloadend',function(event){
+          (event.features||[]).forEach(function(feature){
+            const area=Number(feature.get('area'));
+            if(Number.isFinite(area)) feature.set('area_m2_calculada',area*10000,true);
+          });
+          sicarCount.textContent=String(sicarSource.getFeatures().length);
+          vectorStatus.textContent='Camadas vetoriais carregadas.';
+        });
+        sicarSource.on('featuresloaderror',function(){
+          vectorStatus.textContent='Falha no WFS SICAR.';
+        });
+
+        let drawInteraction=null;
+        let measureOverlay=null;
+
+        const modeText=document.getElementById('modeText');
+        const coordText=document.getElementById('coordText');
+        const measureText=document.getElementById('measureText');
+        const buttons={
+          navigate:document.getElementById('btnNavigate'),
+          point:document.getElementById('btnPoint'),
+          line:document.getElementById('btnLine'),
+          polygon:document.getElementById('btnPolygon')
+        };
+
+        function setActiveButton(name){
+          Object.values(buttons).forEach(function(b){b.classList.remove('active');});
+          buttons[name].classList.add('active');
+        }
+        function removeDrawInteraction(){
+          if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null;}
+        }
+        function formatLength(line){
+          const length=ol.sphere.getLength(line);
+          return length>=1000 ? (length/1000).toFixed(2)+' km' : length.toFixed(2)+' m';
+        }
+        function formatArea(polygon){
+          const area=ol.sphere.getArea(polygon);
+          return area>=10000 ? (area/10000).toFixed(4)+' ha' : area.toFixed(2)+' m²';
+        }
+        function createMeasureOverlay(){
+          const element=document.createElement('div');
+          element.className='measure-tooltip';
+          measureOverlay=new ol.Overlay({element:element,offset:[0,-12],positioning:'bottom-center',stopEvent:false});
+          map.addOverlay(measureOverlay);
+          return element;
+        }
+        function activateNavigate(){
+          removeDrawInteraction();
+          setActiveButton('navigate');
+          modeText.textContent='Navegar';
+        }
+        function activateDraw(type,buttonName,label){
+          removeDrawInteraction();
+          setActiveButton(buttonName);
+          modeText.textContent=label;
+          drawInteraction=new ol.interaction.Draw({source:drawSource,type:type});
+          map.addInteraction(drawInteraction);
+
+          drawInteraction.on('drawstart',function(event){
+            measureText.textContent='Desenhando...';
+            const feature=event.feature;
+            const tooltipElement=createMeasureOverlay();
+            feature.getGeometry().on('change',function(geometryEvent){
+              const geometry=geometryEvent.target;
+              let value='';
+              if(geometry.getType()==='Polygon'){
+                value=formatArea(geometry);
+                if(measureOverlay) measureOverlay.setPosition(geometry.getInteriorPoint().getCoordinates());
+              }else if(geometry.getType()==='LineString'){
+                value=formatLength(geometry);
+                if(measureOverlay) measureOverlay.setPosition(geometry.getLastCoordinate());
+              }
+              if(value){tooltipElement.textContent=value;measureText.textContent=value;}
+            });
+          });
+
+          drawInteraction.on('drawend',function(event){
+            const geometry=event.feature.getGeometry();
+            if(geometry.getType()==='Point'){
+              const lonLat=ol.proj.toLonLat(geometry.getCoordinates());
+              measureText.textContent='Lat '+lonLat[1].toFixed(6)+' · Lon '+lonLat[0].toFixed(6);
+            }
+            measureOverlay=null;
+          });
+        }
+
+        buttons.navigate.addEventListener('click',activateNavigate);
+        buttons.point.addEventListener('click',function(){activateDraw('Point','point','Desenhar ponto');});
+        buttons.line.addEventListener('click',function(){activateDraw('LineString','line','Desenhar linha');});
+        buttons.polygon.addEventListener('click',function(){activateDraw('Polygon','polygon','Desenhar polígono');});
+
+        document.getElementById('btnClear').addEventListener('click',function(){
+          drawSource.clear();
+          map.getOverlays().getArray().slice().forEach(function(o){map.removeOverlay(o);});
+          measureText.textContent='—';
+        });
+
+        map.getView().on('change:resolution',function(){
+          sicarLayer.changed();
+          municipioLayer.changed();
+        });
+
+        function renderProperties(title,feature,preferred){
+          const props=feature.getProperties();
+          let html='<h3>'+title+'</h3><table>';
+          preferred.forEach(function(key){
+            if(props[key]===undefined || key==='geometry') return;
+            let value=props[key];
+            if(key==='area_m2_calculada' && Number.isFinite(Number(value))){
+              value=Number(value).toLocaleString('pt-BR',{maximumFractionDigits:2})+' m²';
+            }
+            html+='<tr><td>'+key+'</td><td>'+String(value)+'</td></tr>';
+          });
+          html+='</table>';
+          infoPanel.innerHTML=html;
+          infoPanel.style.display='block';
+        }
+
+        map.on('singleclick',function(event){
+          let selected=null;
+          let selectedLayer=null;
+          map.forEachFeatureAtPixel(event.pixel,function(feature,layer){
+            if(layer===sicarLayer){selected=feature;selectedLayer='sicar';return true;}
+            if(!selected && layer===municipioLayer){selected=feature;selectedLayer='municipio';}
+            return false;
+          });
+
+          if(!selected){infoPanel.style.display='none';return;}
+
+          if(selectedLayer==='sicar'){
+            renderProperties('Imóvel SICAR',selected,['cod_imovel','status_imovel','dat_criacao','data_atualizacao','area','condicao','uf','municipio','cod_municipio_ibge','m_fiscal','tipo_imovel','area_m2_calculada']);
+          }else{
+            const props=selected.getProperties();
+            const keys=Object.keys(props).filter(function(k){return k!=='geometry';}).slice(0,20);
+            renderProperties('Município',selected,keys);
+          }
+        });
+
+        map.on('pointermove',function(event){
+          const lonLat=ol.proj.toLonLat(event.coordinate);
+          coordText.textContent='Lat '+lonLat[1].toFixed(6)+' · Lon '+lonLat[0].toFixed(6);
+        });
+
+        window.addEventListener('resize',function(){map.updateSize();});
+      }catch(err){
+        console.error(err);
+        showError('Erro ao iniciar o mapa: '+err.message);
+      }
+    })();
+  </script>
 </body>
 </html>
