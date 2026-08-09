@@ -22,22 +22,27 @@
     header{padding:16px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
     header h1{margin:0;font-size:22px}
     header p{margin:5px 0 0;color:var(--muted);font-size:14px}
-    .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .toolbar,.layerbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .layerbar{padding-top:7px;padding-bottom:7px;font-size:13px}
+    .layerbar label{display:flex;align-items:center;gap:6px;min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:#fff}
     button{min-height:42px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);padding:8px 13px;font-weight:700;cursor:pointer}
     button.active{background:var(--green);border-color:var(--green);color:#fff}
     button.danger{color:#8a2929}
-    #map{width:100%;height:calc(100vh - 167px);min-height:420px;background:#e8ece9}
+    #map{width:100%;height:calc(100vh - 246px);min-height:420px;background:#e8ece9}
     .status{display:flex;flex-wrap:wrap;gap:14px;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:13px}
     .status strong{color:var(--text)}
     .measure-tooltip{position:relative;background:rgba(20,38,25,.86);color:#fff;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:bold;white-space:nowrap;pointer-events:none}
     .error{display:none;padding:10px 14px;background:#fff2f2;border-bottom:1px solid #e3baba;color:#8a2929;font-size:13px}
-    @media(max-width:640px){header{padding:12px}header h1{font-size:19px}#map{height:62vh;min-height:390px}.toolbar{display:grid;grid-template-columns:repeat(2,1fr)}button{width:100%}}
+    .notice{padding:7px 14px;background:#fffbe8;border-bottom:1px solid #eadfa9;color:#665a22;font-size:12px}
+    .info-panel{display:none;position:absolute;z-index:20;right:12px;top:160px;width:min(330px,calc(100% - 24px));max-height:300px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
+    .info-panel h3{margin:0 0 8px;font-size:15px}.info-panel table{width:100%;border-collapse:collapse;font-size:12px}.info-panel td{padding:4px 3px;border-bottom:1px solid #eee;vertical-align:top;word-break:break-word}.info-panel td:first-child{font-weight:700;width:38%}
+    @media(max-width:640px){header{padding:12px}header h1{font-size:19px}#map{height:58vh;min-height:390px}.toolbar{display:grid;grid-template-columns:repeat(2,1fr)}button{width:100%}.layerbar{align-items:stretch}.layerbar label{flex:1}.info-panel{top:210px}}
   </style>
 </head>
 <body>
   <header>
     <h1>WebMap de Treinamento</h1>
-    <p>OpenLayers + OpenStreetMap · processamento local no navegador</p>
+    <p>OpenLayers + OpenStreetMap + WFS · processamento local no navegador</p>
   </header>
 
   <div id="error" class="error"></div>
@@ -50,17 +55,36 @@
     <button id="btnClear" class="danger" type="button">Limpar desenhos</button>
   </div>
 
-  <div id="map"></div>
+  <div class="layerbar">
+    <strong>Camadas:</strong>
+    <label><input id="toggleSicar" type="checkbox" checked> SICAR WFS</label>
+    <label><input id="toggleLabels" type="checkbox" checked> Rótulos SICAR</label>
+    <span id="wfsStatus">Aproxime para zoom 12+.</span>
+  </div>
+
+  <div class="notice">O WFS é consultado somente na área visível do mapa (BBOX). Os rótulos aparecem a partir do zoom 14. Clique em um imóvel para ver atributos.</div>
+
+  <div style="position:relative">
+    <div id="map"></div>
+    <div id="infoPanel" class="info-panel"></div>
+  </div>
 
   <div class="status">
     <span>Ferramenta: <strong id="modeText">Navegar</strong></span>
     <span>Coordenadas: <strong id="coordText">—</strong></span>
     <span>Última medição: <strong id="measureText">—</strong></span>
+    <span>SICAR carregados: <strong id="featureCount">0</strong></span>
   </div>
 
   <script>
     (function(){
       const errorBox=document.getElementById('error');
+      const wfsStatus=document.getElementById('wfsStatus');
+      const featureCount=document.getElementById('featureCount');
+      const infoPanel=document.getElementById('infoPanel');
+      const toggleSicar=document.getElementById('toggleSicar');
+      const toggleLabels=document.getElementById('toggleLabels');
+
       function showError(message){
         errorBox.style.display='block';
         errorBox.textContent=message;
@@ -72,9 +96,10 @@
       }
 
       try{
-        const vectorSource=new ol.source.Vector();
-        const vectorLayer=new ol.layer.Vector({
-          source:vectorSource,
+        const drawSource=new ol.source.Vector();
+        const drawLayer=new ol.layer.Vector({
+          source:drawSource,
+          zIndex:20,
           style:new ol.style.Style({
             fill:new ol.style.Fill({color:'rgba(35,107,58,0.20)'}),
             stroke:new ol.style.Stroke({color:'#236b3a',width:3}),
@@ -86,11 +111,66 @@
           })
         });
 
-        const map=new ol.Map({
+        const sicarSource=new ol.source.Vector({
+          format:new ol.format.GeoJSON(),
+          url:function(extent){
+            const params=new URLSearchParams({
+              service:'WFS',
+              version:'2.0.0',
+              request:'GetFeature',
+              typeNames:'sicar:sicar_imoveis_es',
+              outputFormat:'application/json',
+              srsName:'EPSG:3857',
+              count:'10000',
+              bbox:extent.join(',')+',EPSG:3857'
+            });
+            return 'https://geoserver.car.gov.br/geoserver/sicar/wfs?'+params.toString();
+          },
+          strategy:ol.loadingstrategy.bbox
+        });
+
+        let map=null;
+
+        function sicarStyle(feature){
+          const cod=String(feature.get('cod_imovel')||'');
+          const area=Number(feature.get('area'));
+          let label='';
+
+          if(toggleLabels.checked && map && map.getView().getZoom()>=14){
+            const fim=cod ? cod.slice(-5) : '-----';
+            label='Sicar: ...'+fim;
+            if(Number.isFinite(area)) label+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha';
+          }
+
+          return new ol.style.Style({
+            fill:new ol.style.Fill({color:'rgba(251,154,153,0.30)'}),
+            stroke:new ol.style.Stroke({color:'rgba(255,127,0,0.95)',width:1}),
+            text:label ? new ol.style.Text({
+              text:label,
+              font:'10px Arial',
+              fill:new ol.style.Fill({color:'#000'}),
+              stroke:new ol.style.Stroke({color:'#fff',width:3}),
+              overflow:false
+            }) : undefined
+          });
+        }
+
+        const sicarLayer=new ol.layer.Vector({
+          source:sicarSource,
+          style:sicarStyle,
+          minZoom:12,
+          zIndex:10,
+          renderOrder:function(a,b){
+            return Number(b.get('area')||0)-Number(a.get('area')||0);
+          }
+        });
+
+        map=new ol.Map({
           target:'map',
           layers:[
             new ol.layer.Tile({source:new ol.source.OSM()}),
-            vectorLayer
+            sicarLayer,
+            drawLayer
           ],
           view:new ol.View({
             center:ol.proj.fromLonLat([-40.5,-19.6]),
@@ -117,10 +197,7 @@
         }
 
         function removeDrawInteraction(){
-          if(drawInteraction){
-            map.removeInteraction(drawInteraction);
-            drawInteraction=null;
-          }
+          if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null;}
         }
 
         function formatLength(line){
@@ -136,39 +213,25 @@
         function createMeasureOverlay(){
           const element=document.createElement('div');
           element.className='measure-tooltip';
-          measureOverlay=new ol.Overlay({
-            element:element,
-            offset:[0,-12],
-            positioning:'bottom-center',
-            stopEvent:false
-          });
+          measureOverlay=new ol.Overlay({element:element,offset:[0,-12],positioning:'bottom-center',stopEvent:false});
           map.addOverlay(measureOverlay);
           return element;
         }
 
-        function activateNavigate(){
-          removeDrawInteraction();
-          setActiveButton('navigate');
-          modeText.textContent='Navegar';
-        }
+        function activateNavigate(){removeDrawInteraction();setActiveButton('navigate');modeText.textContent='Navegar';}
 
         function activateDraw(type,buttonName,label){
-          removeDrawInteraction();
-          setActiveButton(buttonName);
-          modeText.textContent=label;
-
-          drawInteraction=new ol.interaction.Draw({source:vectorSource,type:type});
+          removeDrawInteraction();setActiveButton(buttonName);modeText.textContent=label;
+          drawInteraction=new ol.interaction.Draw({source:drawSource,type:type});
           map.addInteraction(drawInteraction);
 
           drawInteraction.on('drawstart',function(event){
             measureText.textContent='Desenhando...';
             const feature=event.feature;
             const tooltipElement=createMeasureOverlay();
-
             feature.getGeometry().on('change',function(geometryEvent){
               const geometry=geometryEvent.target;
               let value='';
-
               if(geometry.getType()==='Polygon'){
                 value=formatArea(geometry);
                 if(measureOverlay) measureOverlay.setPosition(geometry.getInteriorPoint().getCoordinates());
@@ -176,11 +239,7 @@
                 value=formatLength(geometry);
                 if(measureOverlay) measureOverlay.setPosition(geometry.getLastCoordinate());
               }
-
-              if(value){
-                tooltipElement.textContent=value;
-                measureText.textContent=value;
-              }
+              if(value){tooltipElement.textContent=value;measureText.textContent=value;}
             });
           });
 
@@ -194,13 +253,67 @@
           });
         }
 
+        sicarSource.on('featuresloadstart',function(){wfsStatus.textContent='Carregando SICAR...';});
+        sicarSource.on('featuresloadend',function(event){
+          (event.features||[]).forEach(function(feature){
+            const area=Number(feature.get('area'));
+            if(Number.isFinite(area)){
+              feature.set('area_m2_calculada',area*10000,true);
+            }
+          });
+          featureCount.textContent=String(sicarSource.getFeatures().length);
+          wfsStatus.textContent='WFS carregado na área visível.';
+        });
+        sicarSource.on('featuresloaderror',function(){
+          wfsStatus.textContent='Falha no WFS.';
+          showError('O navegador não conseguiu carregar o WFS do SICAR. Se o serviço estiver online, a causa mais provável é uma restrição CORS do servidor.');
+        });
+
+        toggleSicar.addEventListener('change',function(){
+          sicarLayer.setVisible(toggleSicar.checked);
+          if(toggleSicar.checked) sicarSource.changed();
+        });
+        toggleLabels.addEventListener('change',function(){sicarLayer.changed();});
+
+        map.getView().on('change:resolution',function(){
+          const zoom=map.getView().getZoom();
+          if(zoom<12){
+            wfsStatus.textContent='Aproxime para zoom 12+.';
+          }else if(zoom<14){
+            wfsStatus.textContent='WFS ativo; rótulos a partir do zoom 14.';
+          }
+          sicarLayer.changed();
+        });
+
+        map.on('singleclick',function(event){
+          const feature=map.forEachFeatureAtPixel(event.pixel,function(f,layer){
+            return layer===sicarLayer ? f : null;
+          });
+          if(!feature){infoPanel.style.display='none';return;}
+
+          const props=feature.getProperties();
+          const preferred=['cod_imovel','status_imovel','dat_criacao','data_atualizacao','area','condicao','uf','municipio','cod_municipio_ibge','m_fiscal','tipo_imovel','area_m2_calculada'];
+          let html='<h3>Imóvel SICAR</h3><table>';
+          preferred.forEach(function(key){
+            if(props[key]===undefined || key==='geometry') return;
+            let value=props[key];
+            if(key==='area_m2_calculada' && Number.isFinite(Number(value))){
+              value=Number(value).toLocaleString('pt-BR',{maximumFractionDigits:2})+' m²';
+            }
+            html+='<tr><td>'+key+'</td><td>'+String(value)+'</td></tr>';
+          });
+          html+='</table>';
+          infoPanel.innerHTML=html;
+          infoPanel.style.display='block';
+        });
+
         buttons.navigate.addEventListener('click',activateNavigate);
         buttons.point.addEventListener('click',()=>activateDraw('Point','point','Desenhar ponto'));
         buttons.line.addEventListener('click',()=>activateDraw('LineString','line','Desenhar linha'));
         buttons.polygon.addEventListener('click',()=>activateDraw('Polygon','polygon','Desenhar polígono'));
 
         document.getElementById('btnClear').addEventListener('click',function(){
-          vectorSource.clear();
+          drawSource.clear();
           map.getOverlays().getArray().slice().forEach(o=>map.removeOverlay(o));
           measureText.textContent='—';
         });
