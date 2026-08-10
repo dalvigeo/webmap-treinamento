@@ -7,265 +7,87 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.9.0/ol.css">
 <script src="https://cdn.jsdelivr.net/npm/ol@10.9.0/dist/ol.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/proj4@2.12.1/dist/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatgeobuf@4.2.0/dist/flatgeobuf-geojson.min.js"></script>
 <style>
 :root{--green:#236b3a;--panel:#fff;--line:#d5ddd7;--text:#18211a;--muted:#617066;--shadow:0 3px 14px rgba(0,0,0,.18)}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:#e7ebe8}
-body{display:flex;flex-direction:column}
-header{min-height:54px;display:flex;align-items:center;gap:14px;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--line);z-index:30}
-.brand{min-width:210px;flex:1}.brand h1{margin:0;font-size:18px}.brand p{margin:3px 0 0;color:var(--muted);font-size:11px}
-.draw-tools{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:#e7ebe8}body{display:flex;flex-direction:column}
+header{min-height:54px;display:flex;align-items:center;gap:14px;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--line);z-index:30}.brand{min-width:210px;flex:1}.brand h1{margin:0;font-size:18px}.brand p{margin:3px 0 0;color:var(--muted);font-size:11px}.draw-tools{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
 button,select,input{font:inherit}button{min-height:34px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--text);padding:5px 9px;font-weight:700;cursor:pointer}button:hover{background:#f2f6f3}button.active{color:#fff;background:var(--green);border-color:var(--green)}button.danger{color:#8a2929}
-.map-shell{position:relative;flex:1;min-height:0;overflow:hidden}#map{position:absolute;inset:0;background:#e8ece9}
-.floating{position:absolute;z-index:20;background:rgba(255,255,255,.96);border:1px solid rgba(180,190,182,.9);border-radius:9px;box-shadow:var(--shadow);backdrop-filter:blur(3px)}
+.map-shell{position:relative;flex:1;min-height:0;overflow:hidden}#map{position:absolute;inset:0;background:#e8ece9}.floating{position:absolute;z-index:20;background:rgba(255,255,255,.96);border:1px solid rgba(180,190,182,.9);border-radius:9px;box-shadow:var(--shadow);backdrop-filter:blur(3px)}
 .layers{top:10px;left:10px;width:235px;overflow:hidden}.panel-title{width:100%;min-height:36px;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:0;padding:7px 10px;background:#fff;text-align:left;font-size:12px}.layers.collapsed .arrow{transform:rotate(-90deg)}.layers.collapsed .layer-content{display:none}.layer-content{padding:5px 9px 8px;border-top:1px solid #edf0ed}.layer-row{display:flex;align-items:center;gap:7px;min-height:29px;font-size:12px;cursor:pointer}.layer-sub{padding-left:22px;color:var(--muted);font-size:11px}.swatch{width:16px;height:8px;border-radius:2px;flex:none}.service-status{margin-top:5px;padding-top:5px;border-top:1px solid #edf0ed;color:var(--muted);font-size:9px;line-height:1.3;max-height:55px;overflow:auto}
 .base{left:10px;bottom:72px;width:165px;height:158px;padding:9px;display:flex;flex-direction:column;gap:7px}.base strong{font-size:11px}.base select{width:100%;min-height:34px;border:1px solid var(--line);border-radius:7px;padding:4px 6px;background:#fff;font-size:10px}.base-preview{flex:1;border:1px solid #d5dbd6;border-radius:6px;background:#dde5df;display:flex;align-items:center;justify-content:center;text-align:center;color:#536158;font-size:10px;padding:5px}.base-extra{display:none;align-items:center;gap:4px;font-size:9px;color:var(--muted)}.base-extra.visible{display:flex}.base-extra input{width:72px}
 .bottom{position:absolute;z-index:22;left:185px;right:10px;bottom:10px;min-height:52px;display:flex;align-items:center;gap:8px;padding:6px 7px;background:rgba(255,255,255,.97);border:1px solid rgba(180,190,182,.9);border-radius:9px;box-shadow:var(--shadow);font-size:10px;overflow-x:auto;white-space:nowrap}.search-group{display:flex;align-items:center;gap:4px;min-width:max-content;padding-right:7px;border-right:1px solid #e1e6e2}.search-group:last-child{border-right:0}.search-group strong{font-size:10px}.bottom select,.bottom input{height:30px;border:1px solid #cad4cc;border-radius:6px;padding:4px 6px;background:#fff;font-size:10px}.bottom button{min-height:30px;height:30px;padding:3px 8px;font-size:10px}.coord{width:100px}#queryValue{width:185px}.dock-status{min-width:48px;max-width:150px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:9px}
 .map-status{position:absolute;z-index:12;right:10px;bottom:70px;padding:4px 7px;border-radius:6px;background:rgba(255,255,255,.88);color:#526057;font-size:9px;box-shadow:0 1px 4px rgba(0,0,0,.12);pointer-events:none}
 .info{display:none;position:absolute;z-index:25;right:10px;top:10px;width:min(390px,calc(100% - 265px));max-height:430px;overflow:auto;background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:9px;padding:11px;box-shadow:var(--shadow);font-size:11px}.info h3{margin:0 30px 4px 0;font-size:14px}.info .close{position:absolute;top:5px;right:5px;width:28px;min-height:28px;border:0;background:transparent;padding:0;font-size:18px}.info-count{color:var(--muted);font-size:10px;margin:0 0 9px}.feature-list{display:grid;gap:6px}.feature-list.compact .feature-extra{display:none}.feature-item{border:1px solid #dfe5e0;border-radius:8px;background:#fff;overflow:hidden}.feature-item[open]{border-color:#aab9ad;box-shadow:0 2px 7px rgba(0,0,0,.06)}.feature-item summary{list-style:none;cursor:pointer;padding:8px 9px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px}.feature-item summary::-webkit-details-marker{display:none}.feature-title{font-weight:700;font-size:10px;min-width:0}.feature-title strong{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.feature-title small{display:block;margin-top:2px;color:var(--muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.feature-arrow{color:var(--muted);font-size:11px;flex:none}.feature-item[open] .feature-arrow{transform:rotate(180deg)}.feature-details{padding:0 9px 8px;border-top:1px solid #edf0ed}.feature-details table{width:100%;border-collapse:collapse;font-size:9.5px}.feature-details td{padding:4px 3px;border-bottom:1px solid #f0f2f0;vertical-align:top;word-break:break-word}.feature-details td:first-child{width:40%;font-weight:700}.info-more{width:100%;min-height:30px;margin-top:7px;padding:4px 8px;font-size:10px;background:#f7f9f7}.measure-tooltip{position:relative;background:rgba(20,38,25,.86);color:#fff;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:bold;white-space:nowrap;pointer-events:none}
-.error{display:none;position:absolute;z-index:50;left:50%;top:8px;transform:translateX(-50%);max-width:calc(100% - 20px);padding:7px 10px;background:#fff2f2;border:1px solid #e3baba;border-radius:7px;color:#8a2929;font-size:11px;box-shadow:var(--shadow)}
-[hidden]{display:none!important}
+.error{display:none;position:absolute;z-index:50;left:50%;top:8px;transform:translateX(-50%);max-width:calc(100% - 20px);padding:7px 10px;background:#fff2f2;border:1px solid #e3baba;border-radius:7px;color:#8a2929;font-size:11px;box-shadow:var(--shadow)}[hidden]{display:none!important}
 @media(max-width:850px){.brand p{display:none}.layers{width:205px}.info{width:min(345px,calc(100% - 230px))}.bottom{left:10px}.base{bottom:70px;width:150px;height:145px}.map-status{bottom:68px}}
 @media(max-width:560px){header{display:block;padding:7px 8px}.brand h1{font-size:15px;margin-bottom:5px}.draw-tools{justify-content:flex-start;gap:3px}.draw-tools button{min-height:29px;font-size:9px}.layers{top:8px;left:8px;width:185px}.base{left:8px;bottom:90px;width:135px;height:130px;padding:7px}.bottom{left:8px;right:8px;bottom:8px;min-height:70px;align-items:flex-start}.info{top:8px;right:8px;width:calc(100% - 210px);min-width:150px;max-height:340px}.map-status{right:8px;bottom:86px}}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><h1>EncontraCAR</h1><p>Localização e consulta geoespacial de imóveis rurais</p></div>
-  <div class="draw-tools">
-    <button id="btnNavigate" class="active" type="button">Navegar</button>
-    <button id="btnPoint" type="button">Ponto</button>
-    <button id="btnLine" type="button">Linha</button>
-    <button id="btnPolygon" type="button">Polígono</button>
-    <button id="btnClear" class="danger" type="button">Limpar</button>
-  </div>
-</header>
-<main class="map-shell">
-  <div id="error" class="error"></div>
-  <div id="map"></div>
-
-  <section id="layersPanel" class="floating layers">
-    <button id="layersToggle" class="panel-title" type="button"><strong>Camadas vetoriais</strong><span class="arrow">▼</span></button>
-    <div class="layer-content">
-      <label class="layer-row"><input id="toggleMunicipios" type="checkbox" checked><span class="swatch" style="border-top:2px solid #222"></span>Limite municipal</label>
-      <label class="layer-row"><input id="toggleSicar" type="checkbox" checked><span class="swatch" style="background:rgba(251,154,153,.45);border:1px solid #ff7f00"></span>Imóveis SICAR</label>
-      <label class="layer-row layer-sub"><input id="toggleLabels" type="checkbox" checked>Rótulos SICAR</label>
-      <label class="layer-row"><input id="toggleSimlam" type="checkbox" checked><span class="swatch" style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid rgba(85,255,0,.8);border-radius:0"></span>Empreendimentos SIMLAM</label>
-      <div id="serviceStatus" class="service-status">Serviços prontos.</div>
-    </div>
-  </section>
-
-  <section class="floating base">
-    <strong>Mapa base</strong>
-    <select id="baseSelect">
-      <option value="google" selected>Google Satellite</option>
-      <option value="ortho2020">Ortofoto 2019/2020</option>
-      <option value="ortho2015">Ortofoto 2012/2015</option>
-      <option value="ortho2008">Ortofoto 2007/2008</option>
-      <option value="osm">OpenStreetMap</option>
-    </select>
-    <div id="basePreview" class="base-preview">Google Satellite<br><small>XYZ experimental</small></div>
-    <div id="orthoExtra" class="base-extra"><span>Opac.</span><input id="orthoOpacity" type="range" min="0" max="1" step="0.05" value="1"></div>
-  </section>
-
-  <section class="bottom">
-    <div class="search-group">
-      <strong>Coordenadas</strong>
-      <select id="coordMode"><option value="decimal">Grau decimal</option><option value="utm">UTM 24S</option></select>
-      <span id="decimalFields"><input id="latInput" class="coord" placeholder="Lat. -19,50"><input id="lonInput" class="coord" placeholder="Long. -40,50"></span>
-      <span id="utmFields" hidden><input id="eastInput" class="coord" placeholder="E 350000"><input id="northInput" class="coord" placeholder="N 7840000"></span>
-      <button id="btnFindCoord" type="button">Ir</button><span id="coordSearchStatus" class="dock-status"></span>
-    </div>
-    <div class="search-group">
-      <strong>Buscar atributo</strong>
-      <select id="queryLayer"><option value="sicar">Imóveis SICAR</option><option value="simlam">Empreendimentos SIMLAM</option><option value="municipios">Limite municipal</option></select>
-      <select id="queryField"></select>
-      <input id="queryValue" placeholder="Valor">
-      <button id="btnFindAttribute" type="button">Buscar</button><span id="queryStatus" class="dock-status"></span>
-    </div>
-  </section>
-
-  <div id="mapStatus" class="map-status">Lat — · Lon —</div>
-  <aside id="infoPanel" class="info"></aside>
-</main>
+<header><div class="brand"><h1>EncontraCAR</h1><p>Localização e consulta geoespacial de imóveis rurais</p></div><div class="draw-tools"><button id="btnNavigate" class="active" type="button">Navegar</button><button id="btnPoint" type="button">Ponto</button><button id="btnLine" type="button">Linha</button><button id="btnPolygon" type="button">Polígono</button><button id="btnClear" class="danger" type="button">Limpar</button></div></header>
+<main class="map-shell"><div id="error" class="error"></div><div id="map"></div>
+<section id="layersPanel" class="floating layers"><button id="layersToggle" class="panel-title" type="button"><strong>Camadas vetoriais</strong><span class="arrow">▼</span></button><div class="layer-content">
+<label class="layer-row"><input id="toggleMunicipios" type="checkbox" checked><span class="swatch" style="border-top:2px solid #222"></span>Limite municipal</label>
+<label class="layer-row"><input id="toggleSicar" type="checkbox" checked><span class="swatch" style="background:rgba(251,154,153,.45);border:1px solid #ff7f00"></span>Imóveis SICAR</label>
+<label class="layer-row layer-sub"><input id="toggleLabels" type="checkbox" checked>Rótulos SICAR</label>
+<label class="layer-row"><input id="toggleSimlam" type="checkbox" checked><span class="swatch" style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid rgba(85,255,0,.8);border-radius:0"></span>Empreendimentos SIMLAM</label>
+<div id="serviceStatus" class="service-status">Serviços prontos.</div></div></section>
+<section class="floating base"><strong>Mapa base</strong><select id="baseSelect"><option value="google" selected>Google Satellite</option><option value="ortho2020">Ortofoto 2019/2020</option><option value="ortho2015">Ortofoto 2012/2015</option><option value="ortho2008">Ortofoto 2007/2008</option><option value="osm">OpenStreetMap</option></select><div id="basePreview" class="base-preview">Google Satellite<br><small>XYZ experimental</small></div><div id="orthoExtra" class="base-extra"><span>Opac.</span><input id="orthoOpacity" type="range" min="0" max="1" step="0.05" value="1"></div></section>
+<section class="bottom"><div class="search-group"><strong>Coordenadas</strong><select id="coordMode"><option value="decimal">Grau decimal</option><option value="utm">UTM 24S</option></select><span id="decimalFields"><input id="latInput" class="coord" placeholder="Lat. -19,50"><input id="lonInput" class="coord" placeholder="Long. -40,50"></span><span id="utmFields" hidden><input id="eastInput" class="coord" placeholder="E 350000"><input id="northInput" class="coord" placeholder="N 7840000"></span><button id="btnFindCoord" type="button">Ir</button><span id="coordSearchStatus" class="dock-status"></span></div><div class="search-group"><strong>Buscar atributo</strong><select id="queryLayer"><option value="sicar">Imóveis SICAR</option><option value="simlam">Empreendimentos SIMLAM</option><option value="municipios">Limite municipal</option></select><select id="queryField"></select><input id="queryValue" placeholder="Valor"><button id="btnFindAttribute" type="button">Buscar</button><span id="queryStatus" class="dock-status"></span></div></section>
+<div id="mapStatus" class="map-status">Lat — · Lon —</div><aside id="infoPanel" class="info"></aside></main>
 <script>
 (function(){
-const $=id=>document.getElementById(id);
-const errorBox=$('error'),serviceStatus=$('serviceStatus'),infoPanel=$('infoPanel'),layersPanel=$('layersPanel'),baseSelect=$('baseSelect'),basePreview=$('basePreview'),orthoExtra=$('orthoExtra'),orthoOpacity=$('orthoOpacity'),coordMode=$('coordMode'),decimalFields=$('decimalFields'),utmFields=$('utmFields'),coordSearchStatus=$('coordSearchStatus'),latInput=$('latInput'),lonInput=$('lonInput'),eastInput=$('eastInput'),northInput=$('northInput'),queryLayer=$('queryLayer'),queryField=$('queryField'),queryValue=$('queryValue'),queryStatus=$('queryStatus'),mapStatus=$('mapStatus');
-function err(m){errorBox.style.display='block';errorBox.textContent=m;setTimeout(()=>errorBox.style.display='none',6000)}
-function num(v){return Number(String(v).trim().replace(',','.'))}
-function esc(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
-function quote(v){return String(v).replaceAll("'","''")}
+const $=id=>document.getElementById(id);const errorBox=$('error'),serviceStatus=$('serviceStatus'),infoPanel=$('infoPanel'),layersPanel=$('layersPanel'),baseSelect=$('baseSelect'),basePreview=$('basePreview'),orthoExtra=$('orthoExtra'),orthoOpacity=$('orthoOpacity'),coordMode=$('coordMode'),decimalFields=$('decimalFields'),utmFields=$('utmFields'),coordSearchStatus=$('coordSearchStatus'),latInput=$('latInput'),lonInput=$('lonInput'),eastInput=$('eastInput'),northInput=$('northInput'),queryLayer=$('queryLayer'),queryField=$('queryField'),queryValue=$('queryValue'),queryStatus=$('queryStatus'),mapStatus=$('mapStatus');
+function err(m){errorBox.style.display='block';errorBox.textContent=m;setTimeout(()=>errorBox.style.display='none',6000)}function num(v){return Number(String(v).trim().replace(',','.'))}function esc(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}function quote(v){return String(v).replaceAll("'","''")}
 if(typeof ol==='undefined'){err('Erro ao carregar o OpenLayers.');return}
-if(typeof proj4!=='undefined'){
-  proj4.defs('EPSG:4674','+proj=longlat +ellps=GRS80 +no_defs +type=crs');
-  proj4.defs('EPSG:31984','+proj=utm +zone=24 +south +ellps=GRS80 +units=m +no_defs +type=crs');
-}
+if(typeof proj4!=='undefined'){proj4.defs('EPSG:4674','+proj=longlat +ellps=GRS80 +no_defs +type=crs');proj4.defs('EPSG:31984','+proj=utm +zone=24 +south +ellps=GRS80 +units=m +no_defs +type=crs');if(ol.proj&&ol.proj.proj4&&ol.proj.proj4.register)ol.proj.proj4.register(proj4)}
 try{
-const geobases='https://ide.geobases.es.gov.br/geoserver/ows';
-const simlamWfs='https://simlam.idaf.es.gov.br/arcgis/services/IDAF/DADOS_INSTITUCIONAL/MapServer/WFSServer';
-const simlamTypeName='IDAF_DADOS_INSTITUCIONAL:GEO_EMP_LOCALIZACAO';
+const geobases='https://ide.geobases.es.gov.br/geoserver/ows';const simlamFgb='Empreendimentos_Publico.fgb';const simlamMaxResolution=30.8;const geojsonFormat=new ol.format.GeoJSON();
 function wms(layer){return new ol.source.TileWMS({url:geobases,params:{LAYERS:layer,FORMAT:'image/png',TILED:true},serverType:'geoserver',transition:0})}
-const osmLayer=new ol.layer.Tile({source:new ol.source.OSM(),visible:false,zIndex:0});
-const googleSource=new ol.source.XYZ({url:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',maxZoom:19,transition:0});
-const googleLayer=new ol.layer.Tile({source:googleSource,visible:true,zIndex:0});
-const ortho2008Source=wms('geonode:iema_ortofotomosaico_es_1_m_2007_2008');
-const ortho2008Layer=new ol.layer.Tile({source:ortho2008Source,visible:false,zIndex:0});
-const ortho2015Source=wms('geonode:iema_ortofotomosaico_es_025m_2012-2015');
-const ortho2015Layer=new ol.layer.Tile({source:ortho2015Source,visible:false,zIndex:0});
-const ortho2020Source=wms('geonode:ijsn-ortofotomosaico-es-kompsat-3-3a-2019-2020');
-const ortho2020Layer=new ol.layer.Tile({source:ortho2020Source,visible:false,zIndex:0});
-const municipiosSource=new ol.source.TileWMS({url:geobases,params:{LAYERS:'geonode:idaf_limite_municipal_2018_11',FORMAT:'image/png',TRANSPARENT:true,TILED:true},serverType:'geoserver',transition:0});
-const municipiosLayer=new ol.layer.Tile({source:municipiosSource,visible:true,zIndex:5});
+const osmLayer=new ol.layer.Tile({source:new ol.source.OSM(),visible:false,zIndex:0});const googleSource=new ol.source.XYZ({url:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',maxZoom:19,transition:0});const googleLayer=new ol.layer.Tile({source:googleSource,visible:true,zIndex:0});
+const ortho2008Source=wms('geonode:iema_ortofotomosaico_es_1_m_2007_2008'),ortho2008Layer=new ol.layer.Tile({source:ortho2008Source,visible:false,zIndex:0});const ortho2015Source=wms('geonode:iema_ortofotomosaico_es_025m_2012-2015'),ortho2015Layer=new ol.layer.Tile({source:ortho2015Source,visible:false,zIndex:0});const ortho2020Source=wms('geonode:ijsn-ortofotomosaico-es-kompsat-3-3a-2019-2020'),ortho2020Layer=new ol.layer.Tile({source:ortho2020Source,visible:false,zIndex:0});
+const municipiosSource=new ol.source.TileWMS({url:geobases,params:{LAYERS:'geonode:idaf_limite_municipal_2018_11',FORMAT:'image/png',TRANSPARENT:true,TILED:true},serverType:'geoserver',transition:0}),municipiosLayer=new ol.layer.Tile({source:municipiosSource,visible:true,zIndex:5});
 function geoserver3857(endpoint,typeName){return new ol.source.Vector({format:new ol.format.GeoJSON(),url:extent=>{const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:typeName,outputFormat:'application/json',srsName:'EPSG:3857',count:'10000',bbox:extent.join(',')+',EPSG:3857'});return endpoint+'?'+p},strategy:ol.loadingstrategy.bbox})}
-const sicarSource=geoserver3857('https://geoserver.car.gov.br/geoserver/sicar/wfs','sicar:sicar_imoveis_es');
-
-function rawEmpreendimento(f){const v=f.get('EMPREENDIMENTO')??f.get('empreendimento');return v===undefined||v===null?null:Number(v)}
-function codigoEmpreendimento(raw){const v=Number(raw);if(!Number.isFinite(v))return null;if(v>274262)return v-21;if(v>4788&&v<274263)return v-19;if(v<4788)return v-14;return null}
-function prepararSimlamFeature(f){const c=codigoEmpreendimento(rawEmpreendimento(f));f.set('COD_EMPREENDIMENTO',Number.isFinite(c)?c:null,true);return f}
-function candidatosEmpreendimento(cod){const c=Number(cod);if(!Number.isInteger(c))return [];const vals=[];const a=c+21,b=c+19,d=c+14;if(a>274262)vals.push(a);if(b>4788&&b<274263)vals.push(b);if(d<4788)vals.push(d);return [...new Set(vals)]}
-const simlamFormat20=new ol.format.WFS({version:'2.0.0'});
-const simlamSource=new ol.source.Vector({strategy:ol.loadingstrategy.bbox});
-simlamSource.setLoader(function(extent,resolution,projection,success,failure){
-  const e=ol.proj.transformExtent(extent,'EPSG:3857','EPSG:4326');
-  const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:simlamTypeName,srsName:'EPSG:4326',count:'10000',bbox:e.join(',')+',EPSG:4326'});
-  fetch(simlamWfs+'?'+p.toString(),{mode:'cors'}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.text()}).then(text=>{if(/ExceptionReport|ServiceException/i.test(text))throw Error('Exceção WFS');const fs=simlamFormat20.readFeatures(text,{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'}).map(prepararSimlamFeature);simlamSource.addFeatures(fs);success&&success(fs);serviceStatus.textContent='SIMLAM: '+simlamSource.getFeatures().length+' empreendimentos carregados.'}).catch(e=>{console.error('SIMLAM WFS',e);simlamSource.removeLoadedExtent(extent);failure&&failure();serviceStatus.textContent='Falha no WFS de empreendimentos SIMLAM.'});
-});
-async function simlamPorEmpreendimentoBruto(raw,campo='empreendimento'){
-  const filtro='<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"><fes:PropertyIsEqualTo><fes:ValueReference>'+campo+'</fes:ValueReference><fes:Literal>'+raw+'</fes:Literal></fes:PropertyIsEqualTo></fes:Filter>';
-  const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:simlamTypeName,srsName:'EPSG:4326',count:'10',FILTER:filtro});
-  const r=await fetch(simlamWfs+'?'+p.toString(),{mode:'cors'});if(!r.ok)throw Error('HTTP '+r.status);const text=await r.text();if(/ExceptionReport|ServiceException/i.test(text))throw Error('Exceção WFS');return simlamFormat20.readFeatures(text,{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'}).map(prepararSimlamFeature)
+const sicarSource=geoserver3857('https://geoserver.car.gov.br/geoserver/sicar/wfs','sicar:sicar_imoveis_es');const simlamSource=new ol.source.Vector();
+function simlamFeature(gj){if(!gj||!gj.geometry||gj.geometry.type!=='Point')return null;const c=gj.properties&&gj.properties.COD_EMPREENDIMENTO;if(c===undefined||c===null||c==='')return null;const f=geojsonFormat.readFeature(gj,{dataProjection:'EPSG:31984',featureProjection:'EPSG:3857'});f.set('COD_EMPREENDIMENTO',c,true);return f}
+let map,simlamLoadSeq=0,simlamIndex=null,simlamIndexPromise=null;
+async function loadSimlamForView(){
+  const seq=++simlamLoadSeq;if(!map||!$('toggleSimlam').checked){simlamSource.clear(true);return}const res=map.getView().getResolution()||Infinity;if(res>simlamMaxResolution){simlamSource.clear(true);return}if(typeof flatgeobuf==='undefined'){serviceStatus.textContent='Biblioteca FlatGeobuf indisponível.';return}
+  const extent=map.getView().calculateExtent(map.getSize()),e=ol.proj.transformExtent(extent,'EPSG:3857','EPSG:31984'),bbox={minX:e[0],minY:e[1],maxX:e[2],maxY:e[3]},fs=[];serviceStatus.textContent='Carregando empreendimentos SIMLAM...';
+  try{for await(const gj of flatgeobuf.deserialize(simlamFgb,bbox)){if(seq!==simlamLoadSeq)return;const f=simlamFeature(gj);if(f)fs.push(f)}if(seq!==simlamLoadSeq)return;simlamSource.clear(true);simlamSource.addFeatures(fs);serviceStatus.textContent='SIMLAM: '+fs.length+' empreendimento'+(fs.length===1?'':'s')+' na área visível.'}catch(e){if(seq!==simlamLoadSeq)return;console.error('FlatGeobuf SIMLAM',e);simlamSource.clear(true);serviceStatus.textContent='Falha ao ler Empreendimentos_Publico.fgb.'}
 }
-async function buscarSimlamPorCodigo(cod){
-  const candidatos=candidatosEmpreendimento(cod);if(!candidatos.length)return [];
-  let fs=[];
-  try{for(const raw of candidatos)fs.push(...await simlamPorEmpreendimentoBruto(raw,'empreendimento'))}catch(e){console.warn('Filtro SIMLAM em minúsculas falhou; tentando campo em maiúsculas.',e);fs=[];for(const raw of candidatos)fs.push(...await simlamPorEmpreendimentoBruto(raw,'EMPREENDIMENTO'))}
-  const seen=new Set();return fs.filter(f=>{const c=Number(f.get('COD_EMPREENDIMENTO'));if(c!==Number(cod))return false;const key=String(f.getId()||rawEmpreendimento(f)||c);if(seen.has(key))return false;seen.add(key);return true})
+async function ensureSimlamIndex(){
+  if(simlamIndex)return simlamIndex;if(simlamIndexPromise)return simlamIndexPromise;if(typeof flatgeobuf==='undefined')throw Error('FlatGeobuf indisponível');
+  simlamIndexPromise=(async()=>{const idx=new Map();for await(const gj of flatgeobuf.deserialize(simlamFgb)){const c=gj&&gj.properties&&gj.properties.COD_EMPREENDIMENTO;if(c===undefined||c===null||!gj.geometry||gj.geometry.type!=='Point')continue;const key=String(c),arr=idx.get(key)||[];arr.push(gj);idx.set(key,arr)}simlamIndex=idx;return idx})();
+  try{return await simlamIndexPromise}finally{simlamIndexPromise=null}
 }
-
-let map;
-function sicarStyle(f){
-  const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area'));let t='';
-  if($('toggleLabels').checked&&map&&map.getView().getZoom()>=14){t='Sicar: ...'+(cod?cod.slice(-5):'-----');if(Number.isFinite(area))t+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha'}
-  return new ol.style.Style({fill:new ol.style.Fill({color:'rgba(251,154,153,.30)'}),stroke:new ol.style.Stroke({color:'rgba(255,127,0,.95)',width:1}),text:t?new ol.style.Text({text:t,font:'10px Arial',fill:new ol.style.Fill({color:'#000'}),stroke:new ol.style.Stroke({color:'#fff',width:3})}):undefined})
-}
+async function buscarSimlamPorCodigo(cod){const idx=await ensureSimlamIndex(),items=idx.get(String(cod))||[];return items.map(simlamFeature).filter(Boolean)}
+function sicarStyle(f){const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area'));let t='';if($('toggleLabels').checked&&map&&map.getView().getZoom()>=14){t='Sicar: ...'+(cod?cod.slice(-5):'-----');if(Number.isFinite(area))t+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha'}return new ol.style.Style({fill:new ol.style.Fill({color:'rgba(251,154,153,.30)'}),stroke:new ol.style.Stroke({color:'rgba(255,127,0,.95)',width:1}),text:t?new ol.style.Text({text:t,font:'10px Arial',fill:new ol.style.Fill({color:'#000'}),stroke:new ol.style.Stroke({color:'#fff',width:3})}):undefined})}
 function simlamStyle(f){const c=f.get('COD_EMPREENDIMENTO');if(c===null||c===undefined||c==='')return null;return new ol.style.Style({image:new ol.style.RegularShape({points:3,radius:7,angle:0,fill:new ol.style.Fill({color:'rgba(85,255,0,.80)'})}),text:new ol.style.Text({text:String(c),font:'12px Arial',offsetY:-13,fill:new ol.style.Fill({color:'rgb(45,98,41)'}),stroke:new ol.style.Stroke({color:'#fff',width:4})})})}
-const sicarLayer=new ol.layer.Vector({source:sicarSource,style:sicarStyle,minZoom:12,zIndex:10,renderOrder:(a,b)=>Number(b.get('area')||0)-Number(a.get('area')||0)});
-const simlamLayer=new ol.layer.Vector({source:simlamSource,style:simlamStyle,visible:true,maxResolution:30.8,zIndex:14});
-const hiStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.18)'}),stroke:new ol.style.Stroke({color:'#e00000',width:4}),image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#e00000',width:4})})});
-const resultStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.10)'}),stroke:new ol.style.Stroke({color:'#e49300',width:2})});
-const resultPointStyle=new ol.style.Style({image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'rgba(255,255,255,.9)'}),stroke:new ol.style.Stroke({color:'#e49300',width:3})})});
-const coordStyle=new ol.style.Style({image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#d52020',width:4})})});
-const searchSource=new ol.source.Vector();
-const searchLayer=new ol.layer.Vector({source:searchSource,zIndex:18,style:f=>f.get('searchType')==='coordinate'?coordStyle:(f.getGeometry()&&f.getGeometry().getType()==='Point'?resultPointStyle:resultStyle)});
-const identifySource=new ol.source.Vector();
-const identifyLayer=new ol.layer.Vector({source:identifySource,zIndex:19,style:hiStyle});
-const drawSource=new ol.source.Vector();
-const drawLayer=new ol.layer.Vector({source:drawSource,zIndex:20,style:new ol.style.Style({fill:new ol.style.Fill({color:'rgba(35,107,58,.20)'}),stroke:new ol.style.Stroke({color:'#236b3a',width:3}),image:new ol.style.Circle({radius:6,fill:new ol.style.Fill({color:'#236b3a'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})})});
+const sicarLayer=new ol.layer.Vector({source:sicarSource,style:sicarStyle,minZoom:12,zIndex:10,renderOrder:(a,b)=>Number(b.get('area')||0)-Number(a.get('area')||0)}),simlamLayer=new ol.layer.Vector({source:simlamSource,style:simlamStyle,visible:true,maxResolution:simlamMaxResolution,zIndex:14});
+const hiStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.18)'}),stroke:new ol.style.Stroke({color:'#e00000',width:4}),image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#e00000',width:4})})}),resultStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.10)'}),stroke:new ol.style.Stroke({color:'#e49300',width:2})}),resultPointStyle=new ol.style.Style({image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'rgba(255,255,255,.9)'}),stroke:new ol.style.Stroke({color:'#e49300',width:3})})}),coordStyle=new ol.style.Style({image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#d52020',width:4})})});
+const searchSource=new ol.source.Vector(),searchLayer=new ol.layer.Vector({source:searchSource,zIndex:18,style:f=>f.get('searchType')==='coordinate'?coordStyle:(f.getGeometry()&&f.getGeometry().getType()==='Point'?resultPointStyle:resultStyle)}),identifySource=new ol.source.Vector(),identifyLayer=new ol.layer.Vector({source:identifySource,zIndex:19,style:hiStyle}),drawSource=new ol.source.Vector(),drawLayer=new ol.layer.Vector({source:drawSource,zIndex:20,style:new ol.style.Style({fill:new ol.style.Fill({color:'rgba(35,107,58,.20)'}),stroke:new ol.style.Stroke({color:'#236b3a',width:3}),image:new ol.style.Circle({radius:6,fill:new ol.style.Fill({color:'#236b3a'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})})});
 map=new ol.Map({target:'map',layers:[osmLayer,googleLayer,ortho2008Layer,ortho2015Layer,ortho2020Layer,municipiosLayer,sicarLayer,simlamLayer,searchLayer,identifyLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})});
-let drawInteraction=null,measureOverlay=null;
-const buttons={navigate:$('btnNavigate'),point:$('btnPoint'),line:$('btnLine'),polygon:$('btnPolygon')};
-const defs={
-  sicar:{label:'Imóveis SICAR',url:'https://geoserver.car.gov.br/geoserver/sicar/wfs',typeName:'sicar:sicar_imoveis_es',fields:[{name:'cod_imovel',label:'Código SICAR',type:'text',mode:'exact'},{name:'municipio',label:'Município',type:'text',mode:'contains'},{name:'status_imovel',label:'Status',type:'text',mode:'contains'},{name:'area',label:'Área (ha)',type:'number',mode:'exact'}]},
-  simlam:{label:'Empreendimentos SIMLAM',mode:'simlam',fields:[{name:'COD_EMPREENDIMENTO',label:'Código do empreendimento',type:'number',mode:'exact'}]},
-  municipios:{label:'Limite municipal',url:geobases,typeName:'geonode:idaf_limite_municipal_2018_11',fields:[{name:'nome',label:'Nome',type:'text',mode:'contains'}]}
-};
-function active(n){Object.values(buttons).forEach(b=>b.classList.remove('active'));buttons[n].classList.add('active')}
-function stopDraw(){if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null}}
-function fmtLen(g){const x=ol.sphere.getLength(g);return x>=1000?(x/1000).toFixed(2)+' km':x.toFixed(2)+' m'}
-function fmtArea(g){const x=ol.sphere.getArea(g);return x>=10000?(x/10000).toFixed(4)+' ha':x.toFixed(2)+' m²'}
-function tip(){const e=document.createElement('div');e.className='measure-tooltip';measureOverlay=new ol.Overlay({element:e,offset:[0,-12],positioning:'bottom-center',stopEvent:false});map.addOverlay(measureOverlay);return e}
-function navigate(){stopDraw();active('navigate')}
-function draw(type,name){stopDraw();clearSelection(true);active(name);drawInteraction=new ol.interaction.Draw({source:drawSource,type});map.addInteraction(drawInteraction);drawInteraction.on('drawstart',ev=>{const el=tip();ev.feature.getGeometry().on('change',g=>{const x=g.target;if(x.getType()==='Polygon'){el.textContent=fmtArea(x);measureOverlay&&measureOverlay.setPosition(x.getInteriorPoint().getCoordinates())}else if(x.getType()==='LineString'){el.textContent=fmtLen(x);measureOverlay&&measureOverlay.setPosition(x.getLastCoordinate())}})});drawInteraction.on('drawend',()=>measureOverlay=null)}
-function highlight(f){identifySource.clear();if(f&&f.getGeometry())identifySource.addFeature(f.clone())}
-function clearHighlights(){identifySource.clear();searchSource.clear()}
-function closeInfo(){infoPanel.style.display='none';infoPanel.innerHTML='';clearHighlights()}
-function clearSelection(closePanel=false){clearHighlights();if(closePanel){infoPanel.style.display='none';infoPanel.innerHTML=''}}
-function cleanProps(f){const p=f.getProperties(),o={};Object.keys(p).forEach(k=>{if(k!=='geometry'&&!['searchType','sourceLayer'].includes(k))o[k]=p[k]});return o}
-function propsTable(item){if(item.kind==='simlam'){const c=item.feature.get('COD_EMPREENDIMENTO');return '<table><tr><td>Código do empreendimento</td><td>'+esc(c??'')+'</td></tr></table>'}const p=cleanProps(item.feature);let h='<table>';Object.entries(p).forEach(([k,v])=>{if(v!==undefined&&v!==null)h+='<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td></tr>'});return h+'</table>'}
-function featureSummary(item){
-  const f=item.feature;
-  if(item.kind==='simlam'){return {main:String(f.get('COD_EMPREENDIMENTO')??''),sub:'Empreendimento SIMLAM'}}
-  if(item.kind==='sicar'){
-    const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area')),mun=String(f.get('municipio')||'');
-    const main='SICAR '+(cod?'…'+cod.slice(-8):'sem código');
-    const parts=[];if(Number.isFinite(area))parts.push(area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha');if(mun)parts.push(mun);
-    return {main,sub:parts.join(' · ')};
-  }
-  const nome=String(f.get('nome')||f.get('municipio')||'Município');
-  return {main:nome,sub:'Limite municipal'};
-}
-function renderFeatureList(title,items){
-  if(!items.length){closeInfo();return}
-  let h='<button class="close" type="button" aria-label="Fechar">×</button><h3>'+esc(title)+'</h3><div class="info-count">'+items.length+' feição'+(items.length===1?'':'ões')+'</div><div class="feature-list compact">';
-  items.forEach((item,i)=>{const s=featureSummary(item),extra=i>=3?' feature-extra':'';h+='<details class="feature-item'+extra+'" data-index="'+i+'"'+(i===0?' open':'')+'><summary><span class="feature-title"><strong>'+esc(s.main)+'</strong><small>'+esc(s.sub||item.label)+'</small></span><span class="feature-arrow">▼</span></summary><div class="feature-details">'+propsTable(item)+'</div></details>'});
-  h+='</div>';if(items.length>3)h+='<button class="info-more" type="button">Mostrar mais ('+(items.length-3)+')</button>';
-  infoPanel.innerHTML=h;infoPanel.style.display='block';
-  infoPanel.querySelector('.close').onclick=closeInfo;
-  const details=[...infoPanel.querySelectorAll('.feature-item')];
-  details.forEach(d=>{d.addEventListener('toggle',()=>{if(!d.open)return;details.forEach(o=>{if(o!==d)o.open=false});const item=items[Number(d.dataset.index)];highlight(item.feature)})});
-  const more=infoPanel.querySelector('.info-more');if(more){more.onclick=()=>{const list=infoPanel.querySelector('.feature-list'),compact=list.classList.toggle('compact');more.textContent=compact?'Mostrar mais ('+(items.length-3)+')':'Mostrar menos'}}
-  highlight(items[0].feature);
-}
-function locateCoord(){
-  coordSearchStatus.textContent='';if(typeof proj4==='undefined'){coordSearchStatus.textContent='Proj4 indisponível';return}
-  let lon,lat,e,n;if(coordMode.value==='decimal'){lat=num(latInput.value);lon=num(lonInput.value);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){coordSearchStatus.textContent='Inválida';return}[e,n]=proj4('EPSG:4674','EPSG:31984',[lon,lat])}else{e=num(eastInput.value);n=num(northInput.value);if(!Number.isFinite(e)||!Number.isFinite(n)){coordSearchStatus.textContent='UTM inválida';return}[lon,lat]=proj4('EPSG:31984','EPSG:4674',[e,n])}
-  clearSelection(true);const mc=ol.proj.fromLonLat([lon,lat]),f=new ol.Feature({geometry:new ol.geom.Point(mc),searchType:'coordinate'});searchSource.addFeature(f);map.getView().animate({center:mc,zoom:17,duration:450});coordSearchStatus.textContent='Localizado';
-  infoPanel.innerHTML='<button class="close" type="button">×</button><h3>Coordenada localizada</h3><div class="feature-details"><table><tr><td>Latitude</td><td>'+lat.toFixed(8)+'</td></tr><tr><td>Longitude</td><td>'+lon.toFixed(8)+'</td></tr><tr><td>UTM Este</td><td>'+e.toFixed(3)+' m</td></tr><tr><td>UTM Norte</td><td>'+n.toFixed(3)+' m</td></tr></table></div>';infoPanel.style.display='block';infoPanel.querySelector('.close').onclick=closeInfo;
-}
-function updateFields(){const d=defs[queryLayer.value];queryField.innerHTML='';d.fields.forEach(f=>{const o=document.createElement('option');o.value=f.name;o.textContent=f.label;queryField.appendChild(o)});queryValue.value='';queryStatus.textContent=''}
-function buildCql(f,v){if(f.type==='number'){const x=num(v);if(!Number.isFinite(x))throw Error('Valor inválido');return f.name+'='+x}const s=quote(v);return f.mode==='exact'?f.name+"='"+s+"'":f.name+" ILIKE '%"+s+"%'"}
-async function searchAttr(){
-  const d=defs[queryLayer.value],f=d.fields.find(x=>x.name===queryField.value),v=String(queryValue.value||'').trim();if(!v){queryStatus.textContent='Informe o valor';return}
-  if(d.mode==='simlam'){
-    const cod=num(v);if(!Number.isInteger(cod)){queryStatus.textContent='Código inválido';return}queryStatus.textContent='Consultando...';$('btnFindAttribute').disabled=true;
-    try{const fs=await buscarSimlamPorCodigo(cod);if(!fs.length){clearSelection(true);queryStatus.textContent='Não encontrado';return}clearSelection(true);fs.forEach(x=>{const c=x.clone();c.set('searchType','attribute');c.set('sourceLayer','simlam');searchSource.addFeature(c)});map.getView().fit(searchSource.getExtent(),{padding:[70,70,90,70],maxZoom:17,duration:550});queryStatus.textContent=fs.length+' resultado'+(fs.length>1?'s':'');renderFeatureList('Resultados da busca',fs.map(x=>({feature:x,kind:'simlam',label:d.label})))}catch(e){console.error(e);queryStatus.textContent='Falha na consulta'}finally{$('btnFindAttribute').disabled=false}return
-  }
-  let filter;try{filter=buildCql(f,v)}catch(e){queryStatus.textContent=e.message;return}
-  queryStatus.textContent='Consultando...';$('btnFindAttribute').disabled=true;
-  try{
-    const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:d.typeName,outputFormat:'application/json',srsName:'EPSG:3857',count:'50',CQL_FILTER:filter}),r=await fetch(d.url+'?'+p);if(!r.ok)throw Error('HTTP '+r.status);
-    const fs=new ol.format.GeoJSON().readFeatures(await r.json(),{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});if(!fs.length){clearSelection(true);queryStatus.textContent='Não encontrado';return}
-    clearSelection(true);fs.forEach(x=>{const c=x.clone();c.set('searchType','attribute');c.set('sourceLayer',queryLayer.value);searchSource.addFeature(c)});
-    map.getView().fit(searchSource.getExtent(),{padding:[70,70,90,70],maxZoom:17,duration:550});queryStatus.textContent=fs.length+' resultado'+(fs.length>1?'s':'');
-    const kind=queryLayer.value==='sicar'?'sicar':'municipio';renderFeatureList('Resultados da busca',fs.map(x=>({feature:x,kind,label:d.label})));
-  }catch(e){console.error(e);queryStatus.textContent='Falha na consulta'}finally{$('btnFindAttribute').disabled=false}
-}
-function sortSicar(fs){return fs.slice().sort((a,b)=>{const aa=Number(a.get('area')),bb=Number(b.get('area'));if(Number.isFinite(aa)&&Number.isFinite(bb))return aa-bb;return ol.extent.getArea(a.getGeometry().getExtent())-ol.extent.getArea(b.getGeometry().getExtent())})}
-function uniqueSicar(fs){const seen=new Set();return sortSicar(fs).filter((f,i)=>{const key=String(f.get('cod_imovel')||f.getId()||i);if(seen.has(key))return false;seen.add(key);return true})}
-function uniqueSimlam(fs){const seen=new Set();return fs.filter((f,i)=>{const c=f.get('COD_EMPREENDIMENTO');const key=String(f.getId()||rawEmpreendimento(f)||c||i);if(seen.has(key))return false;seen.add(key);return c!==null&&c!==undefined})}
-async function municipioAt(coord){
-  if(!$('toggleMunicipios').checked)return null;const res=map.getView().getResolution()||1,t=Math.max(res*7,1),bbox=[coord[0]-t,coord[1]-t,coord[0]+t,coord[1]+t],p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:'geonode:idaf_limite_municipal_2018_11',outputFormat:'application/json',srsName:'EPSG:3857',count:'5',bbox:bbox.join(',')+',EPSG:3857'});
-  try{const r=await fetch(geobases+'?'+p);if(!r.ok)return null;const fs=new ol.format.GeoJSON().readFeatures(await r.json(),{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});return fs.find(x=>x.getGeometry().intersectsCoordinate(coord))||fs[0]||null}catch(e){console.error(e);return null}
-}
-$('layersToggle').onclick=()=>layersPanel.classList.toggle('collapsed');
-const baseLayers={google:googleLayer,ortho2008:ortho2008Layer,ortho2015:ortho2015Layer,ortho2020:ortho2020Layer,osm:osmLayer};
-baseSelect.onchange=()=>{const v=baseSelect.value;Object.entries(baseLayers).forEach(([k,l])=>l.setVisible(k===v));orthoExtra.classList.toggle('visible',v.startsWith('ortho'));const names={google:'Google Satellite<br><small>XYZ experimental</small>',ortho2008:'Ortofoto 2007/2008<br><small>GEOBASES · 1 m</small>',ortho2015:'Ortofoto 2012/2015<br><small>GEOBASES · 0,25 m</small>',ortho2020:'Ortofoto 2019/2020<br><small>GEOBASES · KOMPSAT</small>',osm:'OpenStreetMap<br><small>mapa colaborativo</small>'};basePreview.innerHTML=names[v]};
-orthoOpacity.oninput=()=>[ortho2008Layer,ortho2015Layer,ortho2020Layer].forEach(l=>l.setOpacity(Number(orthoOpacity.value)));
-$('toggleMunicipios').onchange=()=>municipiosLayer.setVisible($('toggleMunicipios').checked);
-$('toggleSicar').onchange=()=>sicarLayer.setVisible($('toggleSicar').checked);
-$('toggleLabels').onchange=()=>sicarLayer.changed();
-$('toggleSimlam').onchange=()=>{simlamLayer.setVisible($('toggleSimlam').checked);if($('toggleSimlam').checked)simlamSource.refresh()};
-coordMode.onchange=()=>{const u=coordMode.value==='utm';decimalFields.hidden=u;utmFields.hidden=!u};queryLayer.onchange=updateFields;
-$('btnFindCoord').onclick=locateCoord;$('btnFindAttribute').onclick=searchAttr;
-[latInput,lonInput,eastInput,northInput].forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')locateCoord()});queryValue.onkeydown=e=>{if(e.key==='Enter')searchAttr()};
-buttons.navigate.onclick=navigate;buttons.point.onclick=()=>draw('Point','point');buttons.line.onclick=()=>draw('LineString','line');buttons.polygon.onclick=()=>draw('Polygon','polygon');
-$('btnClear').onclick=()=>{drawSource.clear();clearSelection(true);map.getOverlays().getArray().slice().forEach(o=>map.removeOverlay(o));coordSearchStatus.textContent='';queryStatus.textContent=''};
-[ortho2008Source,ortho2015Source,ortho2020Source].forEach(s=>s.on('tileloaderror',()=>serviceStatus.textContent='Falha em algum tile da ortofoto selecionada.'));
-municipiosSource.on('tileloaderror',()=>serviceStatus.textContent='Falha no limite municipal.');googleSource.on('tileloaderror',()=>serviceStatus.textContent='Falha no Google Satellite.');
-sicarSource.on('featuresloadstart',()=>serviceStatus.textContent='Carregando SICAR...');sicarSource.on('featuresloadend',()=>serviceStatus.textContent='SICAR: '+sicarSource.getFeatures().length+' feições carregadas.');sicarSource.on('featuresloaderror',()=>serviceStatus.textContent='Falha no WFS do SICAR.');
-map.getView().on('change:resolution',()=>sicarLayer.changed());
-map.on('singleclick',async ev=>{
-  if(drawInteraction)return;clearSelection(true);
-  const sicHit=[],simHit=[];map.forEachFeatureAtPixel(ev.pixel,(f,l)=>{if(l===sicarLayer)sicHit.push(f);else if(l===simlamLayer)simHit.push(f)},{hitTolerance:10,layerFilter:l=>l===sicarLayer||l===simlamLayer});
-  const sim=uniqueSimlam(simHit),sic=uniqueSicar(sicHit),mun=await municipioAt(ev.coordinate),items=sim.map(f=>({feature:f,kind:'simlam',label:'Empreendimento SIMLAM'})).concat(sic.map(f=>({feature:f,kind:'sicar',label:'Imóvel SICAR'})));if(mun)items.push({feature:mun,kind:'municipio',label:'Limite municipal'});
-  if(items.length){renderFeatureList('Feições identificadas',items);serviceStatus.textContent=items.length+' feição'+(items.length===1?' identificada.':'ões identificadas.')}else{serviceStatus.textContent='Nenhuma feição identificada.'}
-});
-map.on('pointermove',ev=>{const ll=ol.proj.toLonLat(ev.coordinate);mapStatus.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);if(ev.dragging||drawInteraction){map.getTargetElement().style.cursor='';return}const hit=map.hasFeatureAtPixel(ev.pixel,{hitTolerance:7,layerFilter:l=>l===sicarLayer||l===simlamLayer});map.getTargetElement().style.cursor=hit?'pointer':''});
-document.addEventListener('pointerdown',ev=>{const mapEl=$('map');if(!mapEl.contains(ev.target)&&!infoPanel.contains(ev.target)){clearHighlights()}});
-window.addEventListener('resize',()=>map.updateSize());updateFields();
-}catch(e){console.error(e);err('Erro ao iniciar o mapa: '+e.message)}
-})();
+let drawInteraction=null,measureOverlay=null;const buttons={navigate:$('btnNavigate'),point:$('btnPoint'),line:$('btnLine'),polygon:$('btnPolygon')};
+const defs={sicar:{label:'Imóveis SICAR',url:'https://geoserver.car.gov.br/geoserver/sicar/wfs',typeName:'sicar:sicar_imoveis_es',fields:[{name:'cod_imovel',label:'Código SICAR',type:'text',mode:'exact'},{name:'municipio',label:'Município',type:'text',mode:'contains'},{name:'status_imovel',label:'Status',type:'text',mode:'contains'},{name:'area',label:'Área (ha)',type:'number',mode:'exact'}]},simlam:{label:'Empreendimentos SIMLAM',mode:'simlam',fields:[{name:'COD_EMPREENDIMENTO',label:'Código do empreendimento',type:'number',mode:'exact'}]},municipios:{label:'Limite municipal',url:geobases,typeName:'geonode:idaf_limite_municipal_2018_11',fields:[{name:'nome',label:'Nome',type:'text',mode:'contains'}]}};
+function active(n){Object.values(buttons).forEach(b=>b.classList.remove('active'));buttons[n].classList.add('active')}function stopDraw(){if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null}}function fmtLen(g){const x=ol.sphere.getLength(g);return x>=1000?(x/1000).toFixed(2)+' km':x.toFixed(2)+' m'}function fmtArea(g){const x=ol.sphere.getArea(g);return x>=10000?(x/10000).toFixed(4)+' ha':x.toFixed(2)+' m²'}function tip(){const e=document.createElement('div');e.className='measure-tooltip';measureOverlay=new ol.Overlay({element:e,offset:[0,-12],positioning:'bottom-center',stopEvent:false});map.addOverlay(measureOverlay);return e}
+function navigate(){stopDraw();active('navigate')}function draw(type,name){stopDraw();clearSelection(true);active(name);drawInteraction=new ol.interaction.Draw({source:drawSource,type});map.addInteraction(drawInteraction);drawInteraction.on('drawstart',ev=>{const el=tip();ev.feature.getGeometry().on('change',g=>{const x=g.target;if(x.getType()==='Polygon'){el.textContent=fmtArea(x);measureOverlay&&measureOverlay.setPosition(x.getInteriorPoint().getCoordinates())}else if(x.getType()==='LineString'){el.textContent=fmtLen(x);measureOverlay&&measureOverlay.setPosition(x.getLastCoordinate())}})});drawInteraction.on('drawend',()=>measureOverlay=null)}
+function highlight(f){identifySource.clear();if(f&&f.getGeometry())identifySource.addFeature(f.clone())}function clearHighlights(){identifySource.clear();searchSource.clear()}function closeInfo(){infoPanel.style.display='none';infoPanel.innerHTML='';clearHighlights()}function clearSelection(closePanel=false){clearHighlights();if(closePanel){infoPanel.style.display='none';infoPanel.innerHTML=''}}
+function cleanProps(f){const p=f.getProperties(),o={};Object.keys(p).forEach(k=>{if(k!=='geometry'&&!['searchType','sourceLayer'].includes(k))o[k]=p[k]});return o}function propsTable(item){if(item.kind==='simlam'){return '<table><tr><td>Código do empreendimento</td><td>'+esc(item.feature.get('COD_EMPREENDIMENTO')??'')+'</td></tr></table>'}const p=cleanProps(item.feature);let h='<table>';Object.entries(p).forEach(([k,v])=>{if(v!==undefined&&v!==null)h+='<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td></tr>'});return h+'</table>'}
+function featureSummary(item){const f=item.feature;if(item.kind==='simlam')return{main:String(f.get('COD_EMPREENDIMENTO')??''),sub:'Empreendimento SIMLAM'};if(item.kind==='sicar'){const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area')),mun=String(f.get('municipio')||''),parts=[];if(Number.isFinite(area))parts.push(area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha');if(mun)parts.push(mun);return{main:'SICAR '+(cod?'…'+cod.slice(-8):'sem código'),sub:parts.join(' · ')}}return{main:String(f.get('nome')||f.get('municipio')||'Município'),sub:'Limite municipal'}}
+function renderFeatureList(title,items){if(!items.length){closeInfo();return}let h='<button class="close" type="button" aria-label="Fechar">×</button><h3>'+esc(title)+'</h3><div class="info-count">'+items.length+' feição'+(items.length===1?'':'ões')+'</div><div class="feature-list compact">';items.forEach((item,i)=>{const s=featureSummary(item),extra=i>=3?' feature-extra':'';h+='<details class="feature-item'+extra+'" data-index="'+i+'"'+(i===0?' open':'')+'><summary><span class="feature-title"><strong>'+esc(s.main)+'</strong><small>'+esc(s.sub||item.label)+'</small></span><span class="feature-arrow">▼</span></summary><div class="feature-details">'+propsTable(item)+'</div></details>'});h+='</div>';if(items.length>3)h+='<button class="info-more" type="button">Mostrar mais ('+(items.length-3)+')</button>';infoPanel.innerHTML=h;infoPanel.style.display='block';infoPanel.querySelector('.close').onclick=closeInfo;const details=[...infoPanel.querySelectorAll('.feature-item')];details.forEach(d=>d.addEventListener('toggle',()=>{if(!d.open)return;details.forEach(o=>{if(o!==d)o.open=false});highlight(items[Number(d.dataset.index)].feature)}));const more=infoPanel.querySelector('.info-more');if(more)more.onclick=()=>{const list=infoPanel.querySelector('.feature-list'),compact=list.classList.toggle('compact');more.textContent=compact?'Mostrar mais ('+(items.length-3)+')':'Mostrar menos'};highlight(items[0].feature)}
+function locateCoord(){coordSearchStatus.textContent='';if(typeof proj4==='undefined'){coordSearchStatus.textContent='Proj4 indisponível';return}let lon,lat,e,n;if(coordMode.value==='decimal'){lat=num(latInput.value);lon=num(lonInput.value);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){coordSearchStatus.textContent='Inválida';return}[e,n]=proj4('EPSG:4674','EPSG:31984',[lon,lat])}else{e=num(eastInput.value);n=num(northInput.value);if(!Number.isFinite(e)||!Number.isFinite(n)){coordSearchStatus.textContent='UTM inválida';return}[lon,lat]=proj4('EPSG:31984','EPSG:4674',[e,n])}clearSelection(true);const mc=ol.proj.fromLonLat([lon,lat]),f=new ol.Feature({geometry:new ol.geom.Point(mc),searchType:'coordinate'});searchSource.addFeature(f);map.getView().animate({center:mc,zoom:17,duration:450});coordSearchStatus.textContent='Localizado';infoPanel.innerHTML='<button class="close" type="button">×</button><h3>Coordenada localizada</h3><div class="feature-details"><table><tr><td>Latitude</td><td>'+lat.toFixed(8)+'</td></tr><tr><td>Longitude</td><td>'+lon.toFixed(8)+'</td></tr><tr><td>UTM Este</td><td>'+e.toFixed(3)+' m</td></tr><tr><td>UTM Norte</td><td>'+n.toFixed(3)+' m</td></tr></table></div>';infoPanel.style.display='block';infoPanel.querySelector('.close').onclick=closeInfo}
+function updateFields(){const d=defs[queryLayer.value];queryField.innerHTML='';d.fields.forEach(f=>{const o=document.createElement('option');o.value=f.name;o.textContent=f.label;queryField.appendChild(o)});queryValue.value='';queryStatus.textContent=''}function buildCql(f,v){if(f.type==='number'){const x=num(v);if(!Number.isFinite(x))throw Error('Valor inválido');return f.name+'='+x}const s=quote(v);return f.mode==='exact'?f.name+"='"+s+"'":f.name+" ILIKE '%"+s+"%'"}
+async function searchAttr(){const d=defs[queryLayer.value],f=d.fields.find(x=>x.name===queryField.value),v=String(queryValue.value||'').trim();if(!v){queryStatus.textContent='Informe o valor';return}if(d.mode==='simlam'){const cod=num(v);if(!Number.isInteger(cod)){queryStatus.textContent='Código inválido';return}queryStatus.textContent=simlamIndex?'Consultando...':'Preparando índice de busca...';$('btnFindAttribute').disabled=true;try{const fs=await buscarSimlamPorCodigo(cod);if(!fs.length){clearSelection(true);queryStatus.textContent='Não encontrado';return}clearSelection(true);fs.forEach(x=>{const c=x.clone();c.set('searchType','attribute');c.set('sourceLayer','simlam');searchSource.addFeature(c)});map.getView().fit(searchSource.getExtent(),{padding:[70,70,90,70],maxZoom:17,duration:550});queryStatus.textContent=fs.length+' resultado'+(fs.length>1?'s':'');renderFeatureList('Resultados da busca',fs.map(x=>({feature:x,kind:'simlam',label:d.label})))}catch(e){console.error(e);queryStatus.textContent='Falha ao consultar a base SIMLAM'}finally{$('btnFindAttribute').disabled=false}return}let filter;try{filter=buildCql(f,v)}catch(e){queryStatus.textContent=e.message;return}queryStatus.textContent='Consultando...';$('btnFindAttribute').disabled=true;try{const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:d.typeName,outputFormat:'application/json',srsName:'EPSG:3857',count:'50',CQL_FILTER:filter}),r=await fetch(d.url+'?'+p);if(!r.ok)throw Error('HTTP '+r.status);const fs=new ol.format.GeoJSON().readFeatures(await r.json(),{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});if(!fs.length){clearSelection(true);queryStatus.textContent='Não encontrado';return}clearSelection(true);fs.forEach(x=>{const c=x.clone();c.set('searchType','attribute');c.set('sourceLayer',queryLayer.value);searchSource.addFeature(c)});map.getView().fit(searchSource.getExtent(),{padding:[70,70,90,70],maxZoom:17,duration:550});queryStatus.textContent=fs.length+' resultado'+(fs.length>1?'s':'');const kind=queryLayer.value==='sicar'?'sicar':'municipio';renderFeatureList('Resultados da busca',fs.map(x=>({feature:x,kind,label:d.label})))}catch(e){console.error(e);queryStatus.textContent='Falha na consulta'}finally{$('btnFindAttribute').disabled=false}}
+function sortSicar(fs){return fs.slice().sort((a,b)=>{const aa=Number(a.get('area')),bb=Number(b.get('area'));if(Number.isFinite(aa)&&Number.isFinite(bb))return aa-bb;return ol.extent.getArea(a.getGeometry().getExtent())-ol.extent.getArea(b.getGeometry().getExtent())})}function uniqueSicar(fs){const seen=new Set();return sortSicar(fs).filter((f,i)=>{const key=String(f.get('cod_imovel')||f.getId()||i);if(seen.has(key))return false;seen.add(key);return true})}function uniqueSimlam(fs){const seen=new Set();return fs.filter((f,i)=>{const c=f.get('COD_EMPREENDIMENTO');const g=f.getGeometry(),key=String(c)+'|'+(g?g.getCoordinates().join(','):i);if(seen.has(key))return false;seen.add(key);return c!==null&&c!==undefined})}
+async function municipioAt(coord){if(!$('toggleMunicipios').checked)return null;const res=map.getView().getResolution()||1,t=Math.max(res*7,1),bbox=[coord[0]-t,coord[1]-t,coord[0]+t,coord[1]+t],p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:'geonode:idaf_limite_municipal_2018_11',outputFormat:'application/json',srsName:'EPSG:3857',count:'5',bbox:bbox.join(',')+',EPSG:3857'});try{const r=await fetch(geobases+'?'+p);if(!r.ok)return null;const fs=new ol.format.GeoJSON().readFeatures(await r.json(),{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});return fs.find(x=>x.getGeometry().intersectsCoordinate(coord))||fs[0]||null}catch(e){console.error(e);return null}}
+$('layersToggle').onclick=()=>layersPanel.classList.toggle('collapsed');const baseLayers={google:googleLayer,ortho2008:ortho2008Layer,ortho2015:ortho2015Layer,ortho2020:ortho2020Layer,osm:osmLayer};baseSelect.onchange=()=>{const v=baseSelect.value;Object.entries(baseLayers).forEach(([k,l])=>l.setVisible(k===v));orthoExtra.classList.toggle('visible',v.startsWith('ortho'));const names={google:'Google Satellite<br><small>XYZ experimental</small>',ortho2008:'Ortofoto 2007/2008<br><small>GEOBASES · 1 m</small>',ortho2015:'Ortofoto 2012/2015<br><small>GEOBASES · 0,25 m</small>',ortho2020:'Ortofoto 2019/2020<br><small>GEOBASES · KOMPSAT</small>',osm:'OpenStreetMap<br><small>mapa colaborativo</small>'};basePreview.innerHTML=names[v]};orthoOpacity.oninput=()=>[ortho2008Layer,ortho2015Layer,ortho2020Layer].forEach(l=>l.setOpacity(Number(orthoOpacity.value)));
+$('toggleMunicipios').onchange=()=>municipiosLayer.setVisible($('toggleMunicipios').checked);$('toggleSicar').onchange=()=>sicarLayer.setVisible($('toggleSicar').checked);$('toggleLabels').onchange=()=>sicarLayer.changed();$('toggleSimlam').onchange=()=>{simlamLayer.setVisible($('toggleSimlam').checked);loadSimlamForView()};coordMode.onchange=()=>{const u=coordMode.value==='utm';decimalFields.hidden=u;utmFields.hidden=!u};queryLayer.onchange=updateFields;$('btnFindCoord').onclick=locateCoord;$('btnFindAttribute').onclick=searchAttr;[latInput,lonInput,eastInput,northInput].forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')locateCoord()});queryValue.onkeydown=e=>{if(e.key==='Enter')searchAttr()};buttons.navigate.onclick=navigate;buttons.point.onclick=()=>draw('Point','point');buttons.line.onclick=()=>draw('LineString','line');buttons.polygon.onclick=()=>draw('Polygon','polygon');$('btnClear').onclick=()=>{drawSource.clear();clearSelection(true);map.getOverlays().getArray().slice().forEach(o=>map.removeOverlay(o));coordSearchStatus.textContent='';queryStatus.textContent=''};
+[ortho2008Source,ortho2015Source,ortho2020Source].forEach(s=>s.on('tileloaderror',()=>serviceStatus.textContent='Falha em algum tile da ortofoto selecionada.'));municipiosSource.on('tileloaderror',()=>serviceStatus.textContent='Falha no limite municipal.');googleSource.on('tileloaderror',()=>serviceStatus.textContent='Falha no Google Satellite.');sicarSource.on('featuresloadstart',()=>serviceStatus.textContent='Carregando SICAR...');sicarSource.on('featuresloadend',()=>serviceStatus.textContent='SICAR: '+sicarSource.getFeatures().length+' feições carregadas.');sicarSource.on('featuresloaderror',()=>serviceStatus.textContent='Falha no WFS do SICAR.');map.getView().on('change:resolution',()=>sicarLayer.changed());map.on('moveend',loadSimlamForView);
+map.on('singleclick',async ev=>{if(drawInteraction)return;clearSelection(true);const sicHit=[],simHit=[];map.forEachFeatureAtPixel(ev.pixel,(f,l)=>{if(l===sicarLayer)sicHit.push(f);else if(l===simlamLayer)simHit.push(f)},{hitTolerance:10,layerFilter:l=>l===sicarLayer||l===simlamLayer});const sim=uniqueSimlam(simHit),sic=uniqueSicar(sicHit),mun=await municipioAt(ev.coordinate),items=sim.map(f=>({feature:f,kind:'simlam',label:'Empreendimento SIMLAM'})).concat(sic.map(f=>({feature:f,kind:'sicar',label:'Imóvel SICAR'})));if(mun)items.push({feature:mun,kind:'municipio',label:'Limite municipal'});if(items.length){renderFeatureList('Feições identificadas',items);serviceStatus.textContent=items.length+' feição'+(items.length===1?' identificada.':'ões identificadas.')}else serviceStatus.textContent='Nenhuma feição identificada.'});
+map.on('pointermove',ev=>{const ll=ol.proj.toLonLat(ev.coordinate);mapStatus.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);if(ev.dragging||drawInteraction){map.getTargetElement().style.cursor='';return}const hit=map.hasFeatureAtPixel(ev.pixel,{hitTolerance:7,layerFilter:l=>l===sicarLayer||l===simlamLayer});map.getTargetElement().style.cursor=hit?'pointer':''});document.addEventListener('pointerdown',ev=>{const mapEl=$('map');if(!mapEl.contains(ev.target)&&!infoPanel.contains(ev.target))clearHighlights()});window.addEventListener('resize',()=>map.updateSize());updateFields();
+}catch(e){console.error(e);err('Erro ao iniciar o mapa: '+e.message)}})();
 </script>
 </body>
 </html>
