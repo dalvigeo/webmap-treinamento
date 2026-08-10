@@ -1,0 +1,129 @@
+name: Apply EncontraCAR map UI update
+on:
+  push:
+    paths:
+      - .github/workflows/apply-map-ui-update.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'Trecho não encontrado: {label}')
+              s = s.replace(old, new, 1)
+
+          # CSS: base map info, north arrow, scale bar.
+          replace_once(
+              ".base{left:10px;bottom:72px;width:165px;height:158px;padding:9px;display:flex;flex-direction:column;gap:7px}.base strong{font-size:11px}",
+              ".base-title-row{display:flex;align-items:center;justify-content:space-between;gap:6px}.base-title-row strong{font-size:11px}.north-arrow{position:absolute;z-index:14;right:12px;top:12px;width:46px;height:58px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(180,190,182,.92);border-radius:8px;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.16);pointer-events:none}.north-arrow-inner{display:flex;flex-direction:column;align-items:center;gap:0;transform-origin:50% 50%}.north-arrow span{font-size:13px;font-weight:800;line-height:13px;color:#18211a}.north-arrow svg{width:28px;height:34px;display:block}.ol-scale-bar{left:auto!important;right:10px!important;bottom:96px!important;z-index:13!important;background:rgba(255,255,255,.90)!important;border:1px solid rgba(180,190,182,.9);border-radius:7px;padding:4px 6px!important;box-shadow:0 1px 5px rgba(0,0,0,.14)}.ol-scale-text{font-size:9px!important;color:#263229!important}.base{left:10px;bottom:72px;width:165px;height:158px;padding:9px;display:flex;flex-direction:column;gap:7px}.base strong{font-size:11px}",
+              'css cartografia'
+          )
+
+          # CSS: footer and social icons.
+          old_footer_css = ".site-footer{height:28px;min-height:28px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 10px;background:#fff;border-top:1px solid var(--line);color:var(--muted);font-size:10px;z-index:31}.footer-credit{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.social-links{display:flex;align-items:center;gap:6px;flex:none}.social-link{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;color:#46534a;text-decoration:none}.social-link:hover{background:#eef3ef;color:var(--green)}.social-link svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.8}.social-link.youtube svg{fill:currentColor;stroke:none}"
+          new_footer_css = ".site-footer{height:36px;min-height:36px;display:flex;align-items:center;justify-content:flex-start;padding:3px 10px;background:#fff;border-top:1px solid var(--line);color:var(--muted);font-size:10px;z-index:31}.footer-branding{display:flex;align-items:center;gap:8px;min-width:0}.footer-credit{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.social-links{display:flex;align-items:center;gap:7px;flex:none}.social-link{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.12);transition:filter .15s,transform .15s}.social-link:hover{filter:brightness(.94);transform:translateY(-1px)}.social-link svg{width:20px;height:20px;display:block}.social-link.instagram{color:#fff;background:linear-gradient(135deg,#feda75 0%,#fa7e1e 24%,#d62976 50%,#962fbf 75%,#4f5bd5 100%)}.social-link.instagram svg{fill:none;stroke:currentColor;stroke-width:1.9}.social-link.youtube{color:#fff;background:#ff0033}.social-link.youtube svg{fill:#fff;stroke:none}"
+          replace_once(old_footer_css, new_footer_css, 'css rodape')
+
+          # Mobile CSS adjustments.
+          replace_once(
+              ".site-footer{height:30px;min-height:30px;padding:3px 7px;font-size:8.5px}.social-link{width:21px;height:21px}.social-link svg{width:16px;height:16px}.source-popover{width:calc(100% - 16px);max-height:55%;font-size:10px}",
+              ".site-footer{height:36px;min-height:36px;padding:3px 7px;font-size:8.5px}.footer-branding{gap:6px}.social-link{width:27px;height:27px}.social-link svg{width:19px;height:19px}.north-arrow{right:8px;top:8px;width:40px;height:50px}.north-arrow svg{width:24px;height:30px}.ol-scale-bar{right:8px!important;bottom:108px!important}.source-popover{width:calc(100% - 16px);max-height:55%;font-size:10px}",
+              'css mobile'
+          )
+
+          # North arrow inside map.
+          replace_once(
+              '<main class="map-shell"><div id="error" class="error"></div><div id="map"></div>',
+              '<main class="map-shell"><div id="error" class="error"></div><div id="map"></div><div id="northArrow" class="north-arrow" title="Norte" aria-label="Seta norte"><div class="north-arrow-inner"><span>N</span><svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2 L27 30 L16 25 L5 30 Z" fill="#18211a"></path><path d="M16 4 V35" stroke="#18211a" stroke-width="2"></path></svg></div></div>',
+              'seta norte'
+          )
+
+          # Base map information button.
+          replace_once(
+              '<section class="floating base"><strong>Mapa base</strong><select id="baseSelect">',
+              '<section class="floating base"><div class="base-title-row"><strong>Mapa base</strong><button id="baseInfoBtn" class="source-info-btn" type="button" data-source="google" title="Informações sobre a fonte do mapa base" aria-label="Informações sobre a fonte do mapa base">i</button></div><select id="baseSelect">',
+              'botao info mapa base'
+          )
+
+          # Footer: icons immediately after credit, on the left.
+          s, n = re.subn(
+              r'<footer class="site-footer">.*?</footer>',
+              '<footer class="site-footer"><div class="footer-branding"><span class="footer-credit">Desenvolvido por Otavio Dalvi - Dalvi Geotecnologias</span><div class="social-links"><a class="social-link instagram" href="https://www.instagram.com/dalvi.geo/" target="_blank" rel="noopener noreferrer" title="Instagram @dalvi.geo" aria-label="Instagram @dalvi.geo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none"></circle></svg></a><a class="social-link youtube" href="https://www.youtube.com/@DalviGeotec" target="_blank" rel="noopener noreferrer" title="YouTube Dalvi Geotecnologias" aria-label="YouTube Dalvi Geotecnologias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.8 L18 12 L9 17.2 Z"></path></svg></a></div></div></footer>',
+              s,
+              count=1,
+              flags=re.S
+          )
+          if n != 1:
+              raise SystemExit('Rodapé não encontrado')
+
+          # DOM references.
+          replace_once(
+              "infoPanel=$('infoPanel'),sourcePopover=$('sourcePopover'),layersPanel=$('layersPanel')",
+              "infoPanel=$('infoPanel'),sourcePopover=$('sourcePopover'),baseInfoBtn=$('baseInfoBtn'),northArrow=$('northArrow'),layersPanel=$('layersPanel')",
+              'refs dom'
+          )
+
+          # SIMLAM clarification.
+          old_note = "note:'O Código do empreendimento exibido no EncontraCAR não corresponde a um atributo publicado diretamente com esse nome na fonte original. Ele é um valor derivado do campo EMPREENDIMENTO, calculado por uma regra inferida a partir da estrutura e da correspondência observada nos dados do WFS. Por esse motivo, deve ser entendido como um identificador derivado para consulta, e não como reprodução literal de um campo oficial da camada original.'"
+          new_note = "note:'O Código do empreendimento exibido neste mapa corresponde exatamente ao identificador utilizado no SIMLAM para os imóveis. Nos imóveis rurais, esse mesmo código é utilizado como nº do CAR/ES. A camada WFS original não publica esse identificador diretamente com o nome COD_EMPREENDIMENTO; no EncontraCAR, ele é obtido a partir do campo EMPREENDIMENTO mediante uma regra de transformação inferida da estrutura e da correspondência observada nos dados do serviço. Assim, embora o campo exibido seja derivado tecnicamente, o valor apresentado corresponde ao código efetivamente utilizado pelo SIMLAM.'"
+          replace_once(old_note, new_note, 'nota simlam')
+
+          # Base map source metadata.
+          marker = "};\nfunction closeSourceInfo()"
+          if marker not in s:
+              raise SystemExit('Marcador das fontes não encontrado')
+          base_sources = """};
+const baseSources={
+google:{title:'Google Satellite',description:'Imagem de satélite disponibilizada pelo Google Maps. No EncontraCAR, a visualização é carregada por um endpoint XYZ utilizado de forma experimental.',source:'Google Maps',access:'Mosaico raster XYZ de fonte externa. A disponibilidade e o conteúdo dependem do serviço de origem.',url:'https://www.google.com/maps'},
+ortho2020:{title:'Ortofoto 2019/2020',description:'Ortofotomosaico do Espírito Santo produzido a partir de imagens dos satélites KOMPSAT 3 e 3A, adquiridas entre 2019 e 2020, com resolução espacial nominal de 0,50 m.',source:'IJSN / GEOBASES',access:'Serviço WMS oficial do GEOBASES.',url:'https://ide.geobases.es.gov.br/layers/geonode%3Aijsn-ortofotomosaico-es-kompsat-3-3a-2019-2020'},
+ortho2015:{title:'Ortofoto 2012/2015',description:'Ortofotomosaico do Espírito Santo elaborado a partir do aerolevantamento do Projeto Mapeamento ES 2012-2015, com resolução espacial de 0,25 m.',source:'IEMA / GEOBASES',access:'Serviço WMS oficial do GEOBASES.',url:'https://ide.geobases.es.gov.br/layers/geonode%3Aiema_ortofotomosaico_es_025m_2012-2015'},
+ortho2008:{title:'Ortofoto 2007/2008',description:'Ortofotomosaico RGB do Espírito Santo produzido a partir de levantamento aerofotogramétrico de 2007/2008, com pixel de 1 m.',source:'IEMA / GEOBASES',access:'Serviço WMS oficial do GEOBASES.',url:'https://ide.geobases.es.gov.br/layers/geonode%3Aiema_ortofotomosaico_es_1_m_2007_2008'},
+osm:{title:'OpenStreetMap',description:'Mapa colaborativo construído a partir dos dados do OpenStreetMap e de seus colaboradores.',source:'OpenStreetMap contributors',access:'Mosaico web do OpenStreetMap. Dados disponibilizados sob a Open Database License (ODbL).',url:'https://www.openstreetmap.org/copyright?locale=pt-BR'}
+};
+function closeSourceInfo()"""
+          s = s.replace(marker, base_sources, 1)
+          replace_once(
+              "function openSourceInfo(key,btn){const d=layerSources[key];",
+              "function openSourceInfo(key,btn){const d=layerSources[key]||baseSources[key];",
+              'fontes unificadas'
+          )
+
+          # Scale bar and rotation-aware north arrow.
+          map_line = "map=new ol.Map({target:'map',layers:[osmLayer,googleLayer,ortho2008Layer,ortho2015Layer,ortho2020Layer,municipiosLayer,sicarLayer,simlamLayer,searchLayer,identifyLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})});\nlet drawInteraction=null,measureOverlay=null;"
+          map_new = "map=new ol.Map({target:'map',layers:[osmLayer,googleLayer,ortho2008Layer,ortho2015Layer,ortho2020Layer,municipiosLayer,sicarLayer,simlamLayer,searchLayer,identifyLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})});\nconst scaleControl=new ol.control.ScaleLine({units:'metric',bar:true,steps:4,text:true,minWidth:130});map.addControl(scaleControl);function updateNorthArrow(){const inner=northArrow&&northArrow.querySelector('.north-arrow-inner');if(inner)inner.style.transform='rotate('+(-(map.getView().getRotation()||0))+'rad)'}map.getView().on('change:rotation',updateNorthArrow);updateNorthArrow();\nlet drawInteraction=null,measureOverlay=null;"
+          replace_once(map_line, map_new, 'escala e norte')
+
+          # Base selection updates the info button source.
+          old_base_change = "baseSelect.onchange=()=>{const v=baseSelect.value;Object.entries(baseLayers).forEach(([k,l])=>l.setVisible(k===v));orthoExtra.classList.toggle('visible',v.startsWith('ortho'));const names={google:'Google Satellite<br><small>XYZ experimental</small>',ortho2008:'Ortofoto 2007/2008<br><small>GEOBASES · 1 m</small>',ortho2015:'Ortofoto 2012/2015<br><small>GEOBASES · 0,25 m</small>',ortho2020:'Ortofoto 2019/2020<br><small>GEOBASES · KOMPSAT</small>',osm:'OpenStreetMap<br><small>mapa colaborativo</small>'};basePreview.innerHTML=names[v]};"
+          new_base_change = "baseSelect.onchange=()=>{const v=baseSelect.value;Object.entries(baseLayers).forEach(([k,l])=>l.setVisible(k===v));orthoExtra.classList.toggle('visible',v.startsWith('ortho'));const names={google:'Google Satellite<br><small>XYZ experimental</small>',ortho2008:'Ortofoto 2007/2008<br><small>GEOBASES · 1 m</small>',ortho2015:'Ortofoto 2012/2015<br><small>GEOBASES · 0,25 m</small>',ortho2020:'Ortofoto 2019/2020<br><small>GEOBASES · KOMPSAT</small>',osm:'OpenStreetMap<br><small>mapa colaborativo</small>'};basePreview.innerHTML=names[v];baseInfoBtn.dataset.source=v;if(baseInfoBtn.classList.contains('active'))closeSourceInfo()};"
+          replace_once(old_base_change, new_base_change, 'mudanca mapa base')
+
+          p.write_text(s, encoding='utf-8')
+
+          # Remove this one-time workflow after applying the patch.
+          wf = Path('.github/workflows/apply-map-ui-update.yml')
+          if wf.exists():
+              wf.unlink()
+          PY
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Adiciona referências dos mapas base, norte, escala e ajusta redes sociais"
+          git push
