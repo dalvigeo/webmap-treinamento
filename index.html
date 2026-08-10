@@ -50,6 +50,7 @@ button,select,input{font:inherit}button{min-height:34px;border:1px solid var(--l
       <label class="layer-row"><input id="toggleMunicipios" type="checkbox" checked><span class="swatch" style="border-top:2px solid #222"></span>Limite municipal</label>
       <label class="layer-row"><input id="toggleSicar" type="checkbox" checked><span class="swatch" style="background:rgba(251,154,153,.45);border:1px solid #ff7f00"></span>Imóveis SICAR</label>
       <label class="layer-row layer-sub"><input id="toggleLabels" type="checkbox" checked>Rótulos SICAR</label>
+      <label class="layer-row"><input id="toggleSimlam" type="checkbox" checked><span class="swatch" style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid rgba(85,255,0,.8);border-radius:0"></span>Empreendimentos SIMLAM</label>
       <div id="serviceStatus" class="service-status">Serviços prontos.</div>
     </div>
   </section>
@@ -77,7 +78,7 @@ button,select,input{font:inherit}button{min-height:34px;border:1px solid var(--l
     </div>
     <div class="search-group">
       <strong>Buscar atributo</strong>
-      <select id="queryLayer"><option value="sicar">Imóveis SICAR</option><option value="municipios">Limite municipal</option></select>
+      <select id="queryLayer"><option value="sicar">Imóveis SICAR</option><option value="simlam">Empreendimentos SIMLAM</option><option value="municipios">Limite municipal</option></select>
       <select id="queryField"></select>
       <input id="queryValue" placeholder="Valor">
       <button id="btnFindAttribute" type="button">Buscar</button><span id="queryStatus" class="dock-status"></span>
@@ -102,6 +103,8 @@ if(typeof proj4!=='undefined'){
 }
 try{
 const geobases='https://ide.geobases.es.gov.br/geoserver/ows';
+const simlamWfs='https://simlam.idaf.es.gov.br/arcgis/services/IDAF/DADOS_INSTITUCIONAL/MapServer/WFSServer';
+const simlamTypeName='IDAF_DADOS_INSTITUCIONAL:GEO_EMP_LOCALIZACAO';
 function wms(layer){return new ol.source.TileWMS({url:geobases,params:{LAYERS:layer,FORMAT:'image/png',TILED:true},serverType:'geoserver',transition:0})}
 const osmLayer=new ol.layer.Tile({source:new ol.source.OSM(),visible:false,zIndex:0});
 const googleSource=new ol.source.XYZ({url:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',maxZoom:19,transition:0});
@@ -116,27 +119,55 @@ const municipiosSource=new ol.source.TileWMS({url:geobases,params:{LAYERS:'geono
 const municipiosLayer=new ol.layer.Tile({source:municipiosSource,visible:true,zIndex:5});
 function geoserver3857(endpoint,typeName){return new ol.source.Vector({format:new ol.format.GeoJSON(),url:extent=>{const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:typeName,outputFormat:'application/json',srsName:'EPSG:3857',count:'10000',bbox:extent.join(',')+',EPSG:3857'});return endpoint+'?'+p},strategy:ol.loadingstrategy.bbox})}
 const sicarSource=geoserver3857('https://geoserver.car.gov.br/geoserver/sicar/wfs','sicar:sicar_imoveis_es');
+
+function rawEmpreendimento(f){const v=f.get('EMPREENDIMENTO')??f.get('empreendimento');return v===undefined||v===null?null:Number(v)}
+function codigoEmpreendimento(raw){const v=Number(raw);if(!Number.isFinite(v))return null;if(v>274262)return v-21;if(v>4788&&v<274263)return v-19;if(v<4788)return v-14;return null}
+function prepararSimlamFeature(f){const c=codigoEmpreendimento(rawEmpreendimento(f));f.set('COD_EMPREENDIMENTO',Number.isFinite(c)?c:null,true);return f}
+function candidatosEmpreendimento(cod){const c=Number(cod);if(!Number.isInteger(c))return [];const vals=[];const a=c+21,b=c+19,d=c+14;if(a>274262)vals.push(a);if(b>4788&&b<274263)vals.push(b);if(d<4788)vals.push(d);return [...new Set(vals)]}
+const simlamFormat20=new ol.format.WFS({version:'2.0.0'});
+const simlamSource=new ol.source.Vector({strategy:ol.loadingstrategy.bbox});
+simlamSource.setLoader(function(extent,resolution,projection,success,failure){
+  const e=ol.proj.transformExtent(extent,'EPSG:3857','EPSG:4326');
+  const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:simlamTypeName,srsName:'EPSG:4326',count:'10000',bbox:e.join(',')+',EPSG:4326'});
+  fetch(simlamWfs+'?'+p.toString(),{mode:'cors'}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.text()}).then(text=>{if(/ExceptionReport|ServiceException/i.test(text))throw Error('Exceção WFS');const fs=simlamFormat20.readFeatures(text,{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'}).map(prepararSimlamFeature);simlamSource.addFeatures(fs);success&&success(fs);serviceStatus.textContent='SIMLAM: '+simlamSource.getFeatures().length+' empreendimentos carregados.'}).catch(e=>{console.error('SIMLAM WFS',e);simlamSource.removeLoadedExtent(extent);failure&&failure();serviceStatus.textContent='Falha no WFS de empreendimentos SIMLAM.'});
+});
+async function simlamPorEmpreendimentoBruto(raw,campo='empreendimento'){
+  const filtro='<fes:Filter xmlns:fes="http://www.opengis.net/fes/2.0"><fes:PropertyIsEqualTo><fes:ValueReference>'+campo+'</fes:ValueReference><fes:Literal>'+raw+'</fes:Literal></fes:PropertyIsEqualTo></fes:Filter>';
+  const p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:simlamTypeName,srsName:'EPSG:4326',count:'10',FILTER:filtro});
+  const r=await fetch(simlamWfs+'?'+p.toString(),{mode:'cors'});if(!r.ok)throw Error('HTTP '+r.status);const text=await r.text();if(/ExceptionReport|ServiceException/i.test(text))throw Error('Exceção WFS');return simlamFormat20.readFeatures(text,{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'}).map(prepararSimlamFeature)
+}
+async function buscarSimlamPorCodigo(cod){
+  const candidatos=candidatosEmpreendimento(cod);if(!candidatos.length)return [];
+  let fs=[];
+  try{for(const raw of candidatos)fs.push(...await simlamPorEmpreendimentoBruto(raw,'empreendimento'))}catch(e){console.warn('Filtro SIMLAM em minúsculas falhou; tentando campo em maiúsculas.',e);fs=[];for(const raw of candidatos)fs.push(...await simlamPorEmpreendimentoBruto(raw,'EMPREENDIMENTO'))}
+  const seen=new Set();return fs.filter(f=>{const c=Number(f.get('COD_EMPREENDIMENTO'));if(c!==Number(cod))return false;const key=String(f.getId()||rawEmpreendimento(f)||c);if(seen.has(key))return false;seen.add(key);return true})
+}
+
 let map;
 function sicarStyle(f){
   const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area'));let t='';
   if($('toggleLabels').checked&&map&&map.getView().getZoom()>=14){t='Sicar: ...'+(cod?cod.slice(-5):'-----');if(Number.isFinite(area))t+='\n'+area.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ha'}
   return new ol.style.Style({fill:new ol.style.Fill({color:'rgba(251,154,153,.30)'}),stroke:new ol.style.Stroke({color:'rgba(255,127,0,.95)',width:1}),text:t?new ol.style.Text({text:t,font:'10px Arial',fill:new ol.style.Fill({color:'#000'}),stroke:new ol.style.Stroke({color:'#fff',width:3})}):undefined})
 }
+function simlamStyle(f){const c=f.get('COD_EMPREENDIMENTO');if(c===null||c===undefined||c==='')return null;return new ol.style.Style({image:new ol.style.RegularShape({points:3,radius:7,angle:0,fill:new ol.style.Fill({color:'rgba(85,255,0,.80)'})}),text:new ol.style.Text({text:String(c),font:'12px Arial',offsetY:-13,fill:new ol.style.Fill({color:'rgb(45,98,41)'}),stroke:new ol.style.Stroke({color:'#fff',width:4})})})}
 const sicarLayer=new ol.layer.Vector({source:sicarSource,style:sicarStyle,minZoom:12,zIndex:10,renderOrder:(a,b)=>Number(b.get('area')||0)-Number(a.get('area')||0)});
+const simlamLayer=new ol.layer.Vector({source:simlamSource,style:simlamStyle,visible:true,maxResolution:30.8,zIndex:14});
 const hiStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.18)'}),stroke:new ol.style.Stroke({color:'#e00000',width:4}),image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#e00000',width:4})})});
 const resultStyle=new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,235,59,.10)'}),stroke:new ol.style.Stroke({color:'#e49300',width:2})});
+const resultPointStyle=new ol.style.Style({image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'rgba(255,255,255,.9)'}),stroke:new ol.style.Stroke({color:'#e49300',width:3})})});
 const coordStyle=new ol.style.Style({image:new ol.style.Circle({radius:9,fill:new ol.style.Fill({color:'#fff'}),stroke:new ol.style.Stroke({color:'#d52020',width:4})})});
 const searchSource=new ol.source.Vector();
-const searchLayer=new ol.layer.Vector({source:searchSource,zIndex:18,style:f=>f.get('searchType')==='coordinate'?coordStyle:resultStyle});
+const searchLayer=new ol.layer.Vector({source:searchSource,zIndex:18,style:f=>f.get('searchType')==='coordinate'?coordStyle:(f.getGeometry()&&f.getGeometry().getType()==='Point'?resultPointStyle:resultStyle)});
 const identifySource=new ol.source.Vector();
 const identifyLayer=new ol.layer.Vector({source:identifySource,zIndex:19,style:hiStyle});
 const drawSource=new ol.source.Vector();
 const drawLayer=new ol.layer.Vector({source:drawSource,zIndex:20,style:new ol.style.Style({fill:new ol.style.Fill({color:'rgba(35,107,58,.20)'}),stroke:new ol.style.Stroke({color:'#236b3a',width:3}),image:new ol.style.Circle({radius:6,fill:new ol.style.Fill({color:'#236b3a'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})})});
-map=new ol.Map({target:'map',layers:[osmLayer,googleLayer,ortho2008Layer,ortho2015Layer,ortho2020Layer,municipiosLayer,sicarLayer,searchLayer,identifyLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})});
+map=new ol.Map({target:'map',layers:[osmLayer,googleLayer,ortho2008Layer,ortho2015Layer,ortho2020Layer,municipiosLayer,sicarLayer,simlamLayer,searchLayer,identifyLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([-40.5,-19.6]),zoom:8})});
 let drawInteraction=null,measureOverlay=null;
 const buttons={navigate:$('btnNavigate'),point:$('btnPoint'),line:$('btnLine'),polygon:$('btnPolygon')};
 const defs={
   sicar:{label:'Imóveis SICAR',url:'https://geoserver.car.gov.br/geoserver/sicar/wfs',typeName:'sicar:sicar_imoveis_es',fields:[{name:'cod_imovel',label:'Código SICAR',type:'text',mode:'exact'},{name:'municipio',label:'Município',type:'text',mode:'contains'},{name:'status_imovel',label:'Status',type:'text',mode:'contains'},{name:'area',label:'Área (ha)',type:'number',mode:'exact'}]},
+  simlam:{label:'Empreendimentos SIMLAM',mode:'simlam',fields:[{name:'COD_EMPREENDIMENTO',label:'Código do empreendimento',type:'number',mode:'exact'}]},
   municipios:{label:'Limite municipal',url:geobases,typeName:'geonode:idaf_limite_municipal_2018_11',fields:[{name:'nome',label:'Nome',type:'text',mode:'contains'}]}
 };
 function active(n){Object.values(buttons).forEach(b=>b.classList.remove('active'));buttons[n].classList.add('active')}
@@ -151,9 +182,10 @@ function clearHighlights(){identifySource.clear();searchSource.clear()}
 function closeInfo(){infoPanel.style.display='none';infoPanel.innerHTML='';clearHighlights()}
 function clearSelection(closePanel=false){clearHighlights();if(closePanel){infoPanel.style.display='none';infoPanel.innerHTML=''}}
 function cleanProps(f){const p=f.getProperties(),o={};Object.keys(p).forEach(k=>{if(k!=='geometry'&&!['searchType','sourceLayer'].includes(k))o[k]=p[k]});return o}
-function propsTable(f){const p=cleanProps(f);let h='<table>';Object.entries(p).forEach(([k,v])=>{if(v!==undefined&&v!==null)h+='<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td></tr>'});return h+'</table>'}
+function propsTable(item){if(item.kind==='simlam'){const c=item.feature.get('COD_EMPREENDIMENTO');return '<table><tr><td>Código do empreendimento</td><td>'+esc(c??'')+'</td></tr></table>'}const p=cleanProps(item.feature);let h='<table>';Object.entries(p).forEach(([k,v])=>{if(v!==undefined&&v!==null)h+='<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td></tr>'});return h+'</table>'}
 function featureSummary(item){
   const f=item.feature;
+  if(item.kind==='simlam'){return {main:String(f.get('COD_EMPREENDIMENTO')??''),sub:'Empreendimento SIMLAM'}}
   if(item.kind==='sicar'){
     const cod=String(f.get('cod_imovel')||''),area=Number(f.get('area')),mun=String(f.get('municipio')||'');
     const main='SICAR '+(cod?'…'+cod.slice(-8):'sem código');
@@ -166,7 +198,7 @@ function featureSummary(item){
 function renderFeatureList(title,items){
   if(!items.length){closeInfo();return}
   let h='<button class="close" type="button" aria-label="Fechar">×</button><h3>'+esc(title)+'</h3><div class="info-count">'+items.length+' feição'+(items.length===1?'':'ões')+'</div><div class="feature-list compact">';
-  items.forEach((item,i)=>{const s=featureSummary(item),extra=i>=3?' feature-extra':'';h+='<details class="feature-item'+extra+'" data-index="'+i+'"'+(i===0?' open':'')+'><summary><span class="feature-title"><strong>'+esc(s.main)+'</strong><small>'+esc(s.sub||item.label)+'</small></span><span class="feature-arrow">▼</span></summary><div class="feature-details">'+propsTable(item.feature)+'</div></details>'});
+  items.forEach((item,i)=>{const s=featureSummary(item),extra=i>=3?' feature-extra':'';h+='<details class="feature-item'+extra+'" data-index="'+i+'"'+(i===0?' open':'')+'><summary><span class="feature-title"><strong>'+esc(s.main)+'</strong><small>'+esc(s.sub||item.label)+'</small></span><span class="feature-arrow">▼</span></summary><div class="feature-details">'+propsTable(item)+'</div></details>'});
   h+='</div>';if(items.length>3)h+='<button class="info-more" type="button">Mostrar mais ('+(items.length-3)+')</button>';
   infoPanel.innerHTML=h;infoPanel.style.display='block';
   infoPanel.querySelector('.close').onclick=closeInfo;
@@ -185,6 +217,10 @@ function updateFields(){const d=defs[queryLayer.value];queryField.innerHTML='';d
 function buildCql(f,v){if(f.type==='number'){const x=num(v);if(!Number.isFinite(x))throw Error('Valor inválido');return f.name+'='+x}const s=quote(v);return f.mode==='exact'?f.name+"='"+s+"'":f.name+" ILIKE '%"+s+"%'"}
 async function searchAttr(){
   const d=defs[queryLayer.value],f=d.fields.find(x=>x.name===queryField.value),v=String(queryValue.value||'').trim();if(!v){queryStatus.textContent='Informe o valor';return}
+  if(d.mode==='simlam'){
+    const cod=num(v);if(!Number.isInteger(cod)){queryStatus.textContent='Código inválido';return}queryStatus.textContent='Consultando...';$('btnFindAttribute').disabled=true;
+    try{const fs=await buscarSimlamPorCodigo(cod);if(!fs.length){clearSelection(true);queryStatus.textContent='Não encontrado';return}clearSelection(true);fs.forEach(x=>{const c=x.clone();c.set('searchType','attribute');c.set('sourceLayer','simlam');searchSource.addFeature(c)});map.getView().fit(searchSource.getExtent(),{padding:[70,70,90,70],maxZoom:17,duration:550});queryStatus.textContent=fs.length+' resultado'+(fs.length>1?'s':'');renderFeatureList('Resultados da busca',fs.map(x=>({feature:x,kind:'simlam',label:d.label})))}catch(e){console.error(e);queryStatus.textContent='Falha na consulta'}finally{$('btnFindAttribute').disabled=false}return
+  }
   let filter;try{filter=buildCql(f,v)}catch(e){queryStatus.textContent=e.message;return}
   queryStatus.textContent='Consultando...';$('btnFindAttribute').disabled=true;
   try{
@@ -197,6 +233,7 @@ async function searchAttr(){
 }
 function sortSicar(fs){return fs.slice().sort((a,b)=>{const aa=Number(a.get('area')),bb=Number(b.get('area'));if(Number.isFinite(aa)&&Number.isFinite(bb))return aa-bb;return ol.extent.getArea(a.getGeometry().getExtent())-ol.extent.getArea(b.getGeometry().getExtent())})}
 function uniqueSicar(fs){const seen=new Set();return sortSicar(fs).filter((f,i)=>{const key=String(f.get('cod_imovel')||f.getId()||i);if(seen.has(key))return false;seen.add(key);return true})}
+function uniqueSimlam(fs){const seen=new Set();return fs.filter((f,i)=>{const c=f.get('COD_EMPREENDIMENTO');const key=String(f.getId()||rawEmpreendimento(f)||c||i);if(seen.has(key))return false;seen.add(key);return c!==null&&c!==undefined})}
 async function municipioAt(coord){
   if(!$('toggleMunicipios').checked)return null;const res=map.getView().getResolution()||1,t=Math.max(res*7,1),bbox=[coord[0]-t,coord[1]-t,coord[0]+t,coord[1]+t],p=new URLSearchParams({service:'WFS',version:'2.0.0',request:'GetFeature',typeNames:'geonode:idaf_limite_municipal_2018_11',outputFormat:'application/json',srsName:'EPSG:3857',count:'5',bbox:bbox.join(',')+',EPSG:3857'});
   try{const r=await fetch(geobases+'?'+p);if(!r.ok)return null;const fs=new ol.format.GeoJSON().readFeatures(await r.json(),{dataProjection:'EPSG:3857',featureProjection:'EPSG:3857'});return fs.find(x=>x.getGeometry().intersectsCoordinate(coord))||fs[0]||null}catch(e){console.error(e);return null}
@@ -208,6 +245,7 @@ orthoOpacity.oninput=()=>[ortho2008Layer,ortho2015Layer,ortho2020Layer].forEach(
 $('toggleMunicipios').onchange=()=>municipiosLayer.setVisible($('toggleMunicipios').checked);
 $('toggleSicar').onchange=()=>sicarLayer.setVisible($('toggleSicar').checked);
 $('toggleLabels').onchange=()=>sicarLayer.changed();
+$('toggleSimlam').onchange=()=>{simlamLayer.setVisible($('toggleSimlam').checked);if($('toggleSimlam').checked)simlamSource.refresh()};
 coordMode.onchange=()=>{const u=coordMode.value==='utm';decimalFields.hidden=u;utmFields.hidden=!u};queryLayer.onchange=updateFields;
 $('btnFindCoord').onclick=locateCoord;$('btnFindAttribute').onclick=searchAttr;
 [latInput,lonInput,eastInput,northInput].forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')locateCoord()});queryValue.onkeydown=e=>{if(e.key==='Enter')searchAttr()};
@@ -219,11 +257,11 @@ sicarSource.on('featuresloadstart',()=>serviceStatus.textContent='Carregando SIC
 map.getView().on('change:resolution',()=>sicarLayer.changed());
 map.on('singleclick',async ev=>{
   if(drawInteraction)return;clearSelection(true);
-  const hit=[];map.forEachFeatureAtPixel(ev.pixel,(f,l)=>{if(l===sicarLayer)hit.push(f)},{hitTolerance:10,layerFilter:l=>l===sicarLayer});
-  const sic=uniqueSicar(hit),mun=await municipioAt(ev.coordinate),items=sic.map(f=>({feature:f,kind:'sicar',label:'Imóvel SICAR'}));if(mun)items.push({feature:mun,kind:'municipio',label:'Limite municipal'});
+  const sicHit=[],simHit=[];map.forEachFeatureAtPixel(ev.pixel,(f,l)=>{if(l===sicarLayer)sicHit.push(f);else if(l===simlamLayer)simHit.push(f)},{hitTolerance:10,layerFilter:l=>l===sicarLayer||l===simlamLayer});
+  const sim=uniqueSimlam(simHit),sic=uniqueSicar(sicHit),mun=await municipioAt(ev.coordinate),items=sim.map(f=>({feature:f,kind:'simlam',label:'Empreendimento SIMLAM'})).concat(sic.map(f=>({feature:f,kind:'sicar',label:'Imóvel SICAR'})));if(mun)items.push({feature:mun,kind:'municipio',label:'Limite municipal'});
   if(items.length){renderFeatureList('Feições identificadas',items);serviceStatus.textContent=items.length+' feição'+(items.length===1?' identificada.':'ões identificadas.')}else{serviceStatus.textContent='Nenhuma feição identificada.'}
 });
-map.on('pointermove',ev=>{const ll=ol.proj.toLonLat(ev.coordinate);mapStatus.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);if(ev.dragging||drawInteraction){map.getTargetElement().style.cursor='';return}const hit=map.hasFeatureAtPixel(ev.pixel,{hitTolerance:7,layerFilter:l=>l===sicarLayer});map.getTargetElement().style.cursor=hit?'pointer':''});
+map.on('pointermove',ev=>{const ll=ol.proj.toLonLat(ev.coordinate);mapStatus.textContent='Lat '+ll[1].toFixed(6)+' · Lon '+ll[0].toFixed(6);if(ev.dragging||drawInteraction){map.getTargetElement().style.cursor='';return}const hit=map.hasFeatureAtPixel(ev.pixel,{hitTolerance:7,layerFilter:l=>l===sicarLayer||l===simlamLayer});map.getTargetElement().style.cursor=hit?'pointer':''});
 document.addEventListener('pointerdown',ev=>{const mapEl=$('map');if(!mapEl.contains(ev.target)&&!infoPanel.contains(ev.target)){clearHighlights()}});
 window.addEventListener('resize',()=>map.updateSize());updateFields();
 }catch(e){console.error(e);err('Erro ao iniciar o mapa: '+e.message)}
